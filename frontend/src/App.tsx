@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
   TrendingUp, RefreshCw, CheckCircle2
@@ -19,12 +19,53 @@ interface Pembayaran {
   id?: string | number;
   anggotaId: string | number;
   pertemuanId: string | number;
-  status: boolean | string;
+  status: boolean;
 }
 
 interface Pengaturan {
   periode: string;
   nominal: number;
+}
+
+// A1. Helper: Normalisasi data pembayaran dari Google Sheets
+function normalizePembayaran(rows: any[]): Pembayaran[] {
+  const map = new Map<string, Pembayaran>();
+  
+  for (const row of rows) {
+    if (!row) continue;
+    const getVal = (keys: string[]) => {
+      for (const k of keys) {
+        const foundKey = Object.keys(row).find(
+          (rk) => rk.toLowerCase() === k.toLowerCase()
+        );
+        if (foundKey !== undefined) return row[foundKey];
+      }
+      return undefined;
+    };
+
+    const id = getVal(['id']);
+    const anggotaIdRaw = getVal(['anggotaid']);
+    const pertemuanIdRaw = getVal(['pertemuanid']);
+    const statusRaw = getVal(['status']);
+
+    if (anggotaIdRaw === undefined || pertemuanIdRaw === undefined) continue;
+
+    const anggotaId = String(anggotaIdRaw);
+    const pertemuanId = String(pertemuanIdRaw);
+    const status = statusRaw === true || statusRaw === 'TRUE' || statusRaw === 'true';
+
+    const key = `${anggotaId}-${pertemuanId}`;
+    if (map.has(key)) {
+      const existing = map.get(key)!;
+      if (status) {
+        existing.status = true;
+      }
+    } else {
+      map.set(key, { id, anggotaId, pertemuanId, status });
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 export default function App() {
@@ -54,28 +95,20 @@ export default function App() {
   const [editNominal, setEditNominal] = useState(10000);
   const [inputGasUrl, setInputGasUrl] = useState('');
 
-  useEffect(() => {
-    setInputGasUrl(gasUrl);
-    if (gasUrl) {
-      fetchDataFromGas(gasUrl);
-    }
-  }, [gasUrl]);
+  // A2. Refs untuk pending writes, isFetching, dan active toggles
+  const pendingWrites = useRef<number>(0);
+  const isFetching = useRef<boolean>(false);
+  const activeToggles = useRef<Set<string>>(new Set());
 
-  // Auto-refresh data setiap 30 detik selama URL Apps Script sudah terhubung
-  useEffect(() => {
-    if (!gasUrl) return;
-
-    const interval = setInterval(() => {
-      fetchDataFromGas(gasUrl);
-    }, 30000); // 30000 ms = 30 detik
-
-    return () => clearInterval(interval);
-  }, [gasUrl]);
-
-  const fetchDataFromGas = async (url: string) => {
+  // A2. fetchDataFromGas dengan parameter silent (refresh diam-diam)
+  const fetchDataFromGas = useCallback(async (url: string, silent = false) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
     try {
-      setLoading(true);
-      setError(null);
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
       const res = await fetch(`${url}?action=getData`);
       if (!res.ok) throw new Error('Gagal terhubung ke Google Apps Script');
       const data = await res.json();
@@ -84,7 +117,7 @@ export default function App() {
 
       setAnggota(data.anggota || []);
       setPertemuan(data.pertemuan || []);
-      setPembayaran(data.pembayaran || []);
+      setPembayaran(normalizePembayaran(data.pembayaran || []));
       if (data.pengaturan) {
         setPengaturan({
           periode: data.pengaturan.periode || 'Oktober 2026',
@@ -94,11 +127,50 @@ export default function App() {
         setEditNominal(Number(data.pengaturan.nominal || 10000));
       }
     } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan saat memuat data dari Google Sheets.');
+      if (!silent) {
+        setError(err.message || 'Terjadi kesalahan saat memuat data dari Google Sheets.');
+      } else {
+        console.warn('Silent fetch warning:', err);
+      }
     } finally {
-      setLoading(false);
+      isFetching.current = false;
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    setInputGasUrl(gasUrl);
+    if (gasUrl) {
+      fetchDataFromGas(gasUrl, false);
+    }
+  }, [gasUrl, fetchDataFromGas]);
+
+  // A2. useEffect auto-refresh setiap 30 detik dengan visibilitychange
+  useEffect(() => {
+    if (!gasUrl) return;
+
+    const interval = setInterval(() => {
+      if (pendingWrites.current > 0 || isFetching.current || document.visibilityState !== 'visible') {
+        return;
+      }
+      fetchDataFromGas(gasUrl, true);
+    }, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && gasUrl && pendingWrites.current === 0 && !isFetching.current) {
+        fetchDataFromGas(gasUrl, true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [gasUrl, fetchDataFromGas]);
 
   const callGasApi = async (action: string, payload: any = {}) => {
     if (!gasUrl) {
@@ -133,13 +205,17 @@ export default function App() {
     return true;
   };
 
-  // Toggle Pembayaran (aksi: toggleBayar)
+  // A3. Toggle Pembayaran aman dengan anti double-click & optimistic update
   const handleTogglePembayaran = async (anggotaId: string | number, pertemuanId: string | number) => {
     if (!mintaPassword()) return;
+    const key = `${anggotaId}-${pertemuanId}`;
+    if (activeToggles.current.has(key)) return;
+    activeToggles.current.add(key);
+
     const current = pembayaran.find(
       (p) => String(p.anggotaId) === String(anggotaId) && String(p.pertemuanId) === String(pertemuanId)
     );
-    const currentStatus = current ? (current.status === true || current.status === 'TRUE' || current.status === 'true') : false;
+    const currentStatus = current ? Boolean(current.status) : false;
     const newStatus = !currentStatus;
 
     // Optimistic update
@@ -154,16 +230,29 @@ export default function App() {
       }
     });
 
-    if (!gasUrl) return;
+    if (!gasUrl) {
+      activeToggles.current.delete(key);
+      return;
+    }
 
+    pendingWrites.current++;
     try {
-      await callGasApi('toggleBayar', { anggotaId, pertemuanId });
-    } catch (err) {
-      fetchDataFromGas(gasUrl); // rollback
+      await callGasApi('toggleBayar', { anggotaId, pertemuanId, status: newStatus });
+      if (pendingWrites.current === 1 && gasUrl) {
+        await fetchDataFromGas(gasUrl, true);
+      }
+    } catch (err: any) {
+      if (gasUrl) {
+        await fetchDataFromGas(gasUrl, true); // rollback
+      }
+      alert('Gagal memperbarui pembayaran: ' + (err.message || 'Error'));
+    } finally {
+      pendingWrites.current--;
+      activeToggles.current.delete(key);
     }
   };
 
-  // Add Anggota (aksi: tambahAnggota)
+  // A4. Add Anggota
   const handleAddAnggota = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mintaPassword()) return;
@@ -177,20 +266,22 @@ export default function App() {
       return;
     }
 
+    pendingWrites.current++;
     try {
       setLoading(true);
       await callGasApi('tambahAnggota', { nama: newAnggotaNama.trim() });
-      await fetchDataFromGas(gasUrl);
+      if (gasUrl) await fetchDataFromGas(gasUrl, true);
       setNewAnggotaNama('');
       setShowAddAnggotaModal(false);
     } catch (err: any) {
       alert('Gagal menambah anggota: ' + err.message);
     } finally {
+      pendingWrites.current--;
       setLoading(false);
     }
   };
 
-  // Delete Anggota (aksi: hapusAnggota)
+  // A4. Delete Anggota
   const handleDeleteAnggota = async (id: string | number, nama: string) => {
     if (!mintaPassword()) return;
     if (!confirm(`Hapus anggota ${nama}?`)) return;
@@ -200,18 +291,20 @@ export default function App() {
       return;
     }
 
+    pendingWrites.current++;
     try {
       setLoading(true);
       await callGasApi('hapusAnggota', { id });
-      await fetchDataFromGas(gasUrl);
+      if (gasUrl) await fetchDataFromGas(gasUrl, true);
     } catch (err: any) {
       alert('Gagal menghapus anggota: ' + err.message);
     } finally {
+      pendingWrites.current--;
       setLoading(false);
     }
   };
 
-  // Add Pertemuan (aksi: tambahPertemuan)
+  // A4. Add Pertemuan
   const handleAddPertemuan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mintaPassword()) return;
@@ -225,20 +318,22 @@ export default function App() {
       return;
     }
 
+    pendingWrites.current++;
     try {
       setLoading(true);
       await callGasApi('tambahPertemuan', { hari: newHari, tanggal: newTanggal.trim() });
-      await fetchDataFromGas(gasUrl);
+      if (gasUrl) await fetchDataFromGas(gasUrl, true);
       setNewTanggal('');
       setShowAddPertemuanModal(false);
     } catch (err: any) {
       alert('Gagal menambah pertemuan: ' + err.message);
     } finally {
+      pendingWrites.current--;
       setLoading(false);
     }
   };
 
-  // Delete Pertemuan (aksi: hapusPertemuan)
+  // A4. Delete Pertemuan
   const handleDeletePertemuan = async (id: string | number, tanggal: string, hari: string) => {
     if (!mintaPassword()) return;
     if (!confirm(`Hapus pertemuan hari ${hari} tanggal ${tanggal}?`)) return;
@@ -248,18 +343,20 @@ export default function App() {
       return;
     }
 
+    pendingWrites.current++;
     try {
       setLoading(true);
       await callGasApi('hapusPertemuan', { id });
-      await fetchDataFromGas(gasUrl);
+      if (gasUrl) await fetchDataFromGas(gasUrl, true);
     } catch (err: any) {
       alert('Gagal menghapus pertemuan: ' + err.message);
     } finally {
+      pendingWrites.current--;
       setLoading(false);
     }
   };
 
-  // Save Pengaturan (aksi: updatePengaturan)
+  // A4. Save Pengaturan
   const handleSavePengaturan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mintaPassword()) return;
@@ -269,15 +366,17 @@ export default function App() {
     setGasUrl(inputGasUrl.trim());
 
     if (inputGasUrl.trim()) {
+      pendingWrites.current++;
       try {
         setLoading(true);
         await callGasApi('updatePengaturan', { key: 'periode', value: editPeriode });
         await callGasApi('updatePengaturan', { key: 'nominal', value: editNominal });
         alert('Pengaturan berhasil disimpan ke Google Sheets!');
-        await fetchDataFromGas(inputGasUrl.trim());
+        await fetchDataFromGas(inputGasUrl.trim(), true);
       } catch (err: any) {
         alert('Gagal menyimpan ke Google Sheets: ' + err.message);
       } finally {
+        pendingWrites.current--;
         setLoading(false);
       }
     } else {
@@ -285,14 +384,21 @@ export default function App() {
     }
   };
 
-  // Calculations
-  const totalLunasCount = pembayaran.filter((p) => p.status === true || p.status === 'TRUE' || p.status === 'true').length;
+  // A1. Calculations (mengabaikan baris yatim / orphan rows)
+  const validAnggotaIds = new Set(anggota.map(a => String(a.id)));
+  const validPertemuanIds = new Set(pertemuan.map(pt => String(pt.id)));
+
+  const validPembayaran = pembayaran.filter(p => 
+    validAnggotaIds.has(String(p.anggotaId)) && validPertemuanIds.has(String(p.pertemuanId))
+  );
+
+  const totalLunasCount = validPembayaran.filter((p) => p.status === true).length;
   const totalKasTerkumpul = totalLunasCount * pengaturan.nominal;
 
   const tunggakanList = anggota.map((a) => {
     const belumBayar = pertemuan.filter((pt) => {
-      const p = pembayaran.find((pay) => String(pay.anggotaId) === String(a.id) && String(pay.pertemuanId) === String(pt.id));
-      return !p || (p.status !== true && p.status !== 'TRUE' && p.status !== 'true');
+      const p = validPembayaran.find((pay) => String(pay.anggotaId) === String(a.id) && String(pay.pertemuanId) === String(pt.id));
+      return !p || !p.status;
     });
     return {
       ...a,
@@ -302,7 +408,7 @@ export default function App() {
   }).filter((a) => a.jumlahBelumBayar > 0);
 
   return (
-    <div className="min-h-screen bg-[#1E2125] text-[#ECE6D8] flex flex-col">
+    <div className="min-h-screen bg-[#141b26] text-[#ece6d6] flex flex-col">
       {/* Header */}
       <header className="bg-[#2F343B] border-b border-[#383D44] px-4 py-4 md:px-8 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -322,7 +428,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-6">
-            <img src="logo-psht.png" alt="Logo PSHT" className="h-16 w-16 object-contain" />
+            <img src="/logo-psht.png" alt="Logo PSHT" className="h-16 w-16 object-contain" />
             <div className="flex gap-6">
               <div className="text-center">
                 <p className="text-2xl md:text-3xl font-bold text-[#ECE6D8]">{anggota.length.toString().padStart(2, '0')}</p>
@@ -387,7 +493,7 @@ export default function App() {
 
         {loading && (
           <div className="flex items-center justify-center py-6 text-gray-400 gap-2 mb-4">
-            <RefreshCw className="w-5 h-5 animate-spin text-[#C9A882]" /> Sinkronisasi dengan Google Sheets...
+            <RefreshCw className="w-5 h-5 animate-spin text-[#9c1f1f]" /> Sinkronisasi dengan Google Sheets...
           </div>
         )}
 
@@ -399,21 +505,21 @@ export default function App() {
 
         {activeTab === 'grid' && (
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#1b2433] p-4 rounded-lg border border-[#2b3748]">
               <div>
                 <h3 className="text-lg font-serif-title font-semibold">Tabel Pembayaran Kas</h3>
-                <p className="text-xs text-[#8C9199]">Klik pada kotak sel untuk mengubah status pembayaran. Data otomatis tersimpan ke Google Sheets.</p>
+                <p className="text-xs text-gray-400">Klik pada kotak sel untuk mengubah status pembayaran. Data otomatis tersimpan ke Google Sheets.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setShowAddAnggotaModal(true)}
-                  className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
+                  className="bg-[#9c1f1f] hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" /> Tambah Anggota
                 </button>
                 <button
                   onClick={() => setShowAddPertemuanModal(true)}
-                  className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058]"
+                  className="bg-[#2b3748] hover:bg-slate-700 text-[#ece6d6] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-gray-600"
                 >
                   <Plus className="w-4 h-4" /> Tambah Pertemuan
                 </button>
@@ -421,79 +527,73 @@ export default function App() {
             </div>
 
             {/* Grid Table */}
-            <div className="bg-[#2B3036] rounded-lg border border-[#383D44] shadow overflow-hidden">
+            <div className="bg-[#1b2433] rounded-lg border border-[#2b3748] shadow overflow-hidden">
               <div className="overflow-x-auto max-h-[70vh]">
                 <table className="w-full border-collapse text-left text-sm">
-                  <thead className="sticky top-0 z-20 bg-[#2F343B] text-[#ECE6D8] border-b border-[#383D44]">
+                  <thead className="sticky top-0 z-20 bg-[#141b26] text-[#ece6d6] border-b border-[#2b3748]">
                     <tr>
-                      <th className="sticky left-0 z-30 bg-[#2F343B] px-4 py-3 font-serif-title border-r border-[#383D44] min-w-[180px]">
+                      <th className="sticky left-0 z-30 bg-[#141b26] px-4 py-3 font-serif-title border-r border-[#2b3748] min-w-[180px]">
                         Nama Anggota
                       </th>
-                      {pertemuan.map((pt) => {
-                        const warnaHari =
-                          pt.hari?.toLowerCase() === 'selasa' ? 'text-[#93A98F]' :
-                          pt.hari?.toLowerCase() === 'kamis' ? 'text-[#C9A882]' :
-                          pt.hari?.toLowerCase() === 'sabtu' ? 'text-[#8DA6B8]' :
-                          'text-[#8C9199]';
-                        return (
-                          <th key={pt.id} className="px-3 py-3 text-center border-r border-[#383D44]/50 min-w-[70px]">
-                            <div className={`text-xs font-bold uppercase ${warnaHari}`}>{pt.hari}</div>
-                            <div className="text-sm font-semibold">{pt.tanggal}</div>
-                            <button
-                              onClick={() => handleDeletePertemuan(pt.id, pt.tanggal, pt.hari)}
-                              className="mt-1 text-[#8C9199] hover:text-red-400 transition block mx-auto"
-                              title="Hapus pertemuan"
-                            >
-                              <Trash2 className="w-3 h-3 inline" />
-                            </button>
-                          </th>
-                        );
-                      })}
+                      {pertemuan.map((pt) => (
+                        <th key={pt.id} className="px-3 py-3 text-center border-r border-[#2b3748]/50 min-w-[70px]">
+                          <div className="text-xs font-bold text-[#9c1f1f]">{pt.hari}</div>
+                          <div className="text-sm font-semibold">{pt.tanggal}</div>
+                          <button
+                            onClick={() => handleDeletePertemuan(pt.id, pt.tanggal, pt.hari)}
+                            className="mt-1 text-gray-500 hover:text-red-400 transition block mx-auto"
+                            title="Hapus pertemuan"
+                          >
+                            <Trash2 className="w-3 h-3 inline" />
+                          </button>
+                        </th>
+                      ))}
                       <th className="px-4 py-3 text-center font-serif-title min-w-[100px]">Total Bayar</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#383D44]/60">
+                  <tbody className="divide-y divide-[#2b3748]/60">
                     {anggota.length === 0 ? (
                       <tr>
-                        <td colSpan={pertemuan.length + 2} className="text-center py-8 text-[#8C9199]">
+                        <td colSpan={pertemuan.length + 2} className="text-center py-8 text-gray-400">
                           Belum ada data anggota.
                         </td>
                       </tr>
                     ) : (
-                      anggota.map((a, idx) => {
+                      anggota.map((a) => {
                         const paidCount = pertemuan.filter((pt) => {
-                          const p = pembayaran.find((pay) => String(pay.anggotaId) === String(a.id) && String(pay.pertemuanId) === String(pt.id));
-                          return p && (p.status === true || p.status === 'TRUE' || p.status === 'true');
+                          const p = validPembayaran.find((pay) => String(pay.anggotaId) === String(a.id) && String(pay.pertemuanId) === String(pt.id));
+                          return p && p.status;
                         }).length;
 
-                        const bgBaris = idx % 2 === 0 ? 'bg-[#262A2F]' : 'bg-[#2B3036]';
-
                         return (
-                          <tr key={a.id} className={`${bgBaris} hover:bg-[#383D44]/40 transition`}>
-                            <td className={`sticky left-0 z-10 ${bgBaris} px-4 py-3 font-medium border-r border-[#383D44] flex items-center justify-between gap-2`}>
+                          <tr key={a.id} className="hover:bg-[#1e293b]/50 transition">
+                            <td className="sticky left-0 z-10 bg-[#1b2433] hover:bg-[#1e293b] px-4 py-3 font-medium border-r border-[#2b3748] flex items-center justify-between gap-2">
                               <span className="truncate">{a.nama}</span>
                               <button
                                 onClick={() => handleDeleteAnggota(a.id, a.nama)}
-                                className="text-[#8C9199] hover:text-red-400 p-1 rounded transition"
+                                className="text-gray-500 hover:text-red-400 p-1 rounded transition"
                                 title="Hapus anggota"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </td>
                             {pertemuan.map((pt) => {
-                              const pay = pembayaran.find(
+                              const pay = validPembayaran.find(
                                 (p) => String(p.anggotaId) === String(a.id) && String(p.pertemuanId) === String(pt.id)
                               );
-                              const isLunas = pay ? (pay.status === true || pay.status === 'TRUE' || pay.status === 'true') : false;
+                              const isLunas = pay ? Boolean(pay.status) : false;
+                              const isToggling = activeToggles.current.has(`${a.id}-${pt.id}`);
 
                               return (
                                 <td
                                   key={pt.id}
                                   onClick={() => handleTogglePembayaran(a.id, pt.id)}
-                                  className={`text-center p-2 border-r border-[#383D44]/40 cursor-pointer select-none transition ${
+                                  className={`text-center p-2 border-r border-[#2b3748]/40 cursor-pointer select-none transition ${
+                                    isToggling ? 'opacity-60 cursor-wait' : ''
+                                  } ${
                                     isLunas
                                       ? 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 font-bold'
-                                      : 'bg-transparent hover:bg-[#383D44]/30 text-[#8C9199]'
+                                      : 'bg-transparent hover:bg-[#2b3748]/30 text-gray-600'
                                   }`}
                                   title="Klik untuk ubah status"
                                 >
@@ -502,7 +602,7 @@ export default function App() {
                                       ✓
                                     </span>
                                   ) : (
-                                    <span className="text-[#8C9199] text-xs">-</span>
+                                    <span className="text-gray-600 text-xs">-</span>
                                   )}
                                 </td>
                               );
@@ -524,55 +624,55 @@ export default function App() {
         {activeTab === 'rekap' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Total Kas Terkumpul</p>
+              <div className="bg-[#1b2433] border border-[#2b3748] p-5 rounded-lg shadow">
+                <p className="text-sm text-gray-400">Total Kas Terkumpul</p>
                 <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
                   Rp {totalKasTerkumpul.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Dari {totalLunasCount} pembayaran lunas (Rp {pengaturan.nominal.toLocaleString('id-ID')}/sesi)
                 </p>
               </div>
 
-              <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Total Pertemuan</p>
-                <p className="text-3xl font-serif-title font-bold text-[#ECE6D8] mt-2">
+              <div className="bg-[#1b2433] border border-[#2b3748] p-5 rounded-lg shadow">
+                <p className="text-sm text-gray-400">Total Pertemuan</p>
+                <p className="text-3xl font-serif-title font-bold text-[#ece6d6] mt-2">
                   {pertemuan.length} Sesi
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">Periode {pengaturan.periode}</p>
+                <p className="text-xs text-gray-500 mt-1">Periode {pengaturan.periode}</p>
               </div>
 
-              <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Anggota Belum Lunas Total</p>
+              <div className="bg-[#1b2433] border border-[#2b3748] p-5 rounded-lg shadow">
+                <p className="text-sm text-gray-400">Anggota Belum Lunas Total</p>
                 <p className="text-3xl font-serif-title font-bold text-red-400 mt-2">
                   {tunggakanList.length} Orang
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">Memiliki tunggakan kas</p>
+                <p className="text-xs text-gray-500 mt-1">Memiliki tunggakan kas</p>
               </div>
             </div>
 
-            <div className="bg-[#2B3036] border border-[#383D44] rounded-lg p-5 shadow">
+            <div className="bg-[#1b2433] border border-[#2b3748] rounded-lg p-5 shadow">
               <h3 className="text-lg font-serif-title font-semibold mb-4 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-red-500" /> Daftar Anggota dengan Tunggakan
               </h3>
               {tunggakanList.length === 0 ? (
-                <div className="text-center py-8 text-emerald-400 bg-[#1E2125]/50 rounded border border-[#383D44]">
+                <div className="text-center py-8 text-emerald-400 bg-[#141b26]/50 rounded border border-[#2b3748]">
                   🎉 Luar biasa! Semua anggota sudah melunasi seluruh kas pertemuan.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
-                      <tr className="border-b border-[#383D44] text-[#8C9199]">
+                      <tr className="border-b border-[#2b3748] text-gray-400">
                         <th className="py-3 px-4">Nama Anggota</th>
                         <th className="py-3 px-4 text-center">Jumlah Belum Bayar</th>
                         <th className="py-3 px-4 text-right">Total Tunggakan</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#383D44]/50">
+                    <tbody className="divide-y divide-[#2b3748]/50">
                       {tunggakanList.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#383D44]/40">
-                          <td className="py-3 px-4 font-medium text-[#ECE6D8]">{item.nama}</td>
+                        <tr key={item.id} className="hover:bg-[#1e293b]/50">
+                          <td className="py-3 px-4 font-medium text-[#ece6d6]">{item.nama}</td>
                           <td className="py-3 px-4 text-center">
                             <span className="bg-red-950/60 text-red-400 border border-red-900/50 px-2.5 py-1 rounded-full text-xs font-bold">
                               {item.jumlahBelumBayar} pertemuan
@@ -592,45 +692,45 @@ export default function App() {
         )}
 
         {activeTab === 'pengaturan' && (
-          <div className="max-w-xl mx-auto bg-[#2B3036] border border-[#383D44] rounded-lg p-6 shadow space-y-6">
+          <div className="max-w-xl mx-auto bg-[#1b2433] border border-[#2b3748] rounded-lg p-6 shadow space-y-6">
             <div>
               <h3 className="text-xl font-serif-title font-semibold mb-2 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-[#C9A882]" /> Pengaturan Google Apps Script URL
+                <Settings className="w-5 h-5 text-[#9c1f1f]" /> Pengaturan Google Apps Script URL
               </h3>
-              <p className="text-xs text-[#8C9199] mb-4">
+              <p className="text-xs text-gray-400 mb-4">
                 Masukkan URL Web App dari Google Apps Script Anda agar website ini terhubung langsung ke Google Sheets.
               </p>
 
               <form onSubmit={handleSavePengaturan} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#8C9199] mb-1">URL Web App Google Apps Script</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">URL Web App Google Apps Script</label>
                   <input
                     type="url"
                     value={inputGasUrl}
                     onChange={(e) => setInputGasUrl(e.target.value)}
                     placeholder="https://script.google.com/macros/s/.../exec"
-                    className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882] text-sm"
+                    className="w-full bg-[#141b26] border border-[#2b3748] rounded px-3 py-2 text-[#ece6d6] focus:outline-none focus:border-[#9c1f1f] text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#8C9199] mb-1">Nama Periode (Bulan / Tahun)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Nama Periode (Bulan / Tahun)</label>
                   <input
                     type="text"
                     value={editPeriode}
                     onChange={(e) => setEditPeriode(e.target.value)}
-                    className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                    className="w-full bg-[#141b26] border border-[#2b3748] rounded px-3 py-2 text-[#ece6d6] focus:outline-none focus:border-[#9c1f1f]"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#8C9199] mb-1">Nominal Kas per Pertemuan (Rp)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Nominal Kas per Pertemuan (Rp)</label>
                   <input
                     type="number"
                     value={editNominal}
                     onChange={(e) => setEditNominal(Number(e.target.value))}
-                    className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                    className="w-full bg-[#141b26] border border-[#2b3748] rounded px-3 py-2 text-[#ece6d6] focus:outline-none focus:border-[#9c1f1f]"
                     min="0"
                     step="1000"
                     required
@@ -640,7 +740,7 @@ export default function App() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] font-medium py-2 px-4 rounded transition shadow flex items-center justify-center gap-2"
+                    className="w-full bg-[#9c1f1f] hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition shadow flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" /> Simpan & Hubungkan
                   </button>
@@ -654,17 +754,17 @@ export default function App() {
       {/* Modal Tambah Anggota */}
       {showAddAnggotaModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#2B3036] border border-[#383D44] rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-[#1b2433] border border-[#2b3748] rounded-lg max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-serif-title font-semibold mb-4">Tambah Anggota Baru</h3>
             <form onSubmit={handleAddAnggota} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Nama Anggota</label>
+                <label className="block text-sm text-gray-300 mb-1">Nama Anggota</label>
                 <input
                   type="text"
                   value={newAnggotaNama}
                   onChange={(e) => setNewAnggotaNama(e.target.value)}
                   placeholder="contoh: Budi"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-[#141b26] border border-[#2b3748] rounded px-3 py-2 text-[#ece6d6] focus:outline-none focus:border-[#9c1f1f]"
                   autoFocus
                   required
                 />
@@ -673,13 +773,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddAnggotaModal(false)}
-                  className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
+                  className="px-4 py-2 bg-[#141b26] border border-[#2b3748] text-gray-300 rounded hover:bg-[#2b3748]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] rounded font-medium"
+                  className="px-4 py-2 bg-[#9c1f1f] hover:bg-red-700 text-white rounded font-medium"
                 >
                   Simpan
                 </button>
@@ -692,15 +792,15 @@ export default function App() {
       {/* Modal Tambah Pertemuan */}
       {showAddPertemuanModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#2B3036] border border-[#383D44] rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-[#1b2433] border border-[#2b3748] rounded-lg max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-serif-title font-semibold mb-4">Tambah Pertemuan Baru</h3>
             <form onSubmit={handleAddPertemuan} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Hari</label>
+                <label className="block text-sm text-gray-300 mb-1">Hari</label>
                 <select
                   value={newHari}
                   onChange={(e) => setNewHari(e.target.value)}
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-[#141b26] border border-[#2b3748] rounded px-3 py-2 text-[#ece6d6] focus:outline-none focus:border-[#9c1f1f]"
                 >
                   <option value="Senin">Senin</option>
                   <option value="Selasa">Selasa</option>
@@ -712,13 +812,13 @@ export default function App() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Tanggal</label>
+                <label className="block text-sm text-gray-300 mb-1">Tanggal</label>
                 <input
                   type="text"
                   value={newTanggal}
                   onChange={(e) => setNewTanggal(e.target.value)}
                   placeholder="contoh: 3"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-[#141b26] border border-[#2b3748] rounded px-3 py-2 text-[#ece6d6] focus:outline-none focus:border-[#9c1f1f]"
                   autoFocus
                   required
                 />
@@ -727,13 +827,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddPertemuanModal(false)}
-                  className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
+                  className="px-4 py-2 bg-[#141b26] border border-[#2b3748] text-gray-300 rounded hover:bg-[#2b3748]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] rounded font-medium"
+                  className="px-4 py-2 bg-[#9c1f1f] hover:bg-red-700 text-white rounded font-medium"
                 >
                   Simpan
                 </button>
@@ -744,7 +844,7 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer className="bg-[#2B3036] border-t border-[#383D44] py-4 text-center text-xs text-[#8C9199] mt-auto">
+      <footer className="bg-[#1b2433] border-t border-[#2b3748] py-4 text-center text-xs text-gray-400 mt-auto">
         Uang Kas Google Sheets — Dibuat untuk Bendahara & Wakil Bendahara (Internal)
       </footer>
     </div>
