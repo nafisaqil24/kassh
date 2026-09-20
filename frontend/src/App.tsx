@@ -94,6 +94,7 @@ export default function App() {
   const [editPeriode, setEditPeriode] = useState('Oktober 2026');
   const [editNominal, setEditNominal] = useState(10000);
   const [inputGasUrl, setInputGasUrl] = useState('');
+  const [togglingKeys, setTogglingKeys] = useState<Set<string>>(new Set());
 
   // A2. Refs untuk pending writes, isFetching, dan active toggles
   const pendingWrites = useRef<number>(0);
@@ -115,6 +116,8 @@ export default function App() {
       
       if (data.error) throw new Error(data.error);
 
+      if (silent && pendingWrites.current > 0) return;
+
       setAnggota(data.anggota || []);
       setPertemuan(data.pertemuan || []);
       setPembayaran(normalizePembayaran(data.pembayaran || []));
@@ -123,8 +126,10 @@ export default function App() {
           periode: data.pengaturan.periode || 'Oktober 2026',
           nominal: Number(data.pengaturan.nominal || 10000)
         });
-        setEditPeriode(data.pengaturan.periode || 'Oktober 2026');
-        setEditNominal(Number(data.pengaturan.nominal || 10000));
+        if (!silent) {
+          setEditPeriode(data.pengaturan.periode || 'Oktober 2026');
+          setEditNominal(Number(data.pengaturan.nominal || 10000));
+        }
       }
     } catch (err: any) {
       if (!silent) {
@@ -211,6 +216,7 @@ export default function App() {
     const key = `${anggotaId}-${pertemuanId}`;
     if (activeToggles.current.has(key)) return;
     activeToggles.current.add(key);
+    setTogglingKeys(prev => new Set(prev).add(key));
 
     const current = pembayaran.find(
       (p) => String(p.anggotaId) === String(anggotaId) && String(p.pertemuanId) === String(pertemuanId)
@@ -232,6 +238,11 @@ export default function App() {
 
     if (!gasUrl) {
       activeToggles.current.delete(key);
+      setTogglingKeys(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
       return;
     }
 
@@ -249,6 +260,11 @@ export default function App() {
     } finally {
       pendingWrites.current--;
       activeToggles.current.delete(key);
+      setTogglingKeys(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
     }
   };
 
@@ -428,7 +444,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-6">
-            <img src="/logo-psht.png" alt="Logo PSHT" className="h-16 w-16 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}logo-psht.png`} alt="Logo PSHT" className="h-16 w-16 object-contain" />
             <div className="flex gap-6">
               <div className="text-center">
                 <p className="text-2xl md:text-3xl font-bold text-[#ECE6D8]">{anggota.length.toString().padStart(2, '0')}</p>
@@ -582,7 +598,7 @@ export default function App() {
                                 (p) => String(p.anggotaId) === String(a.id) && String(p.pertemuanId) === String(pt.id)
                               );
                               const isLunas = pay ? Boolean(pay.status) : false;
-                              const isToggling = activeToggles.current.has(`${a.id}-${pt.id}`);
+                              const isToggling = togglingKeys.has(`${a.id}-${pt.id}`);
 
                               return (
                                 <td
