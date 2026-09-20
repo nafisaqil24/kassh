@@ -68,12 +68,39 @@ function normalizePembayaran(rows: any[]): Pembayaran[] {
   return Array.from(map.values());
 }
 
+function getInitialGasUrl(): string {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const gasParam = params.get('gas');
+
+    if (gasParam !== null) {
+      const trimmedGas = gasParam.trim();
+      const isValid = trimmedGas.startsWith('https://script.google.com/macros/s/') && trimmedGas.endsWith('/exec');
+      
+      if (isValid) {
+        localStorage.setItem('gas_web_app_url', trimmedGas);
+      }
+
+      params.delete('gas');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+
+      if (isValid) {
+        return trimmedGas;
+      }
+    }
+
+    return localStorage.getItem('gas_web_app_url') || '';
+  } catch (err) {
+    return '';
+  }
+}
+
 export default function App() {
   const APP_PASSWORD = 'PSHTJAYA';
 
-  const [gasUrl, setGasUrl] = useState<string>(() => {
-    return localStorage.getItem('gas_web_app_url') || '';
-  });
+  const [gasUrl, setGasUrl] = useState<string>(getInitialGasUrl);
 
   const [anggota, setAnggota] = useState<Anggota[]>([]);
   const [pertemuan, setPertemuan] = useState<Pertemuan[]>([]);
