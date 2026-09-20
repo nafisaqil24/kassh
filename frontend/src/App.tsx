@@ -28,6 +28,8 @@ interface Pengaturan {
 }
 
 export default function App() {
+  const APP_PASSWORD = 'PSHTJAYA';
+
   const [gasUrl, setGasUrl] = useState<string>(() => {
     return localStorage.getItem('gas_web_app_url') || '';
   });
@@ -120,8 +122,20 @@ export default function App() {
     }
   };
 
+  // Minta password sebelum melakukan perubahan data
+  const mintaPassword = (): boolean => {
+    const input = prompt('Masukkan password untuk melakukan perubahan:');
+    if (input === null) return false; // user klik Cancel
+    if (input !== APP_PASSWORD) {
+      alert('Password salah!');
+      return false;
+    }
+    return true;
+  };
+
   // Toggle Pembayaran (aksi: toggleBayar)
   const handleTogglePembayaran = async (anggotaId: string | number, pertemuanId: string | number) => {
+    if (!mintaPassword()) return;
     const current = pembayaran.find(
       (p) => String(p.anggotaId) === String(anggotaId) && String(p.pertemuanId) === String(pertemuanId)
     );
@@ -152,6 +166,7 @@ export default function App() {
   // Add Anggota (aksi: tambahAnggota)
   const handleAddAnggota = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mintaPassword()) return;
     if (!newAnggotaNama.trim()) return;
 
     if (!gasUrl) {
@@ -177,6 +192,7 @@ export default function App() {
 
   // Delete Anggota (aksi: hapusAnggota)
   const handleDeleteAnggota = async (id: string | number, nama: string) => {
+    if (!mintaPassword()) return;
     if (!confirm(`Hapus anggota ${nama}?`)) return;
 
     if (!gasUrl) {
@@ -198,6 +214,7 @@ export default function App() {
   // Add Pertemuan (aksi: tambahPertemuan)
   const handleAddPertemuan = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mintaPassword()) return;
     if (!newHari.trim() || !newTanggal.trim()) return;
 
     if (!gasUrl) {
@@ -223,6 +240,7 @@ export default function App() {
 
   // Delete Pertemuan (aksi: hapusPertemuan)
   const handleDeletePertemuan = async (id: string | number, tanggal: string, hari: string) => {
+    if (!mintaPassword()) return;
     if (!confirm(`Hapus pertemuan hari ${hari} tanggal ${tanggal}?`)) return;
 
     if (!gasUrl) {
@@ -244,6 +262,7 @@ export default function App() {
   // Save Pengaturan (aksi: updatePengaturan)
   const handleSavePengaturan = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mintaPassword()) return;
     const newConfig = { periode: editPeriode, nominal: Number(editNominal) };
     setPengaturan(newConfig);
     localStorage.setItem('gas_web_app_url', inputGasUrl.trim());
