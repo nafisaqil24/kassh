@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #141b26;
+    color: #ece6d6;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+.font-serif-title {
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+/* Custom scrollbar for sticky table */
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #141b26;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b3748;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9c1f1f;
+}

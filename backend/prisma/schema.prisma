@@ -1,0 +1,41 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Anggota {
+  id          Int          @id @default(autoincrement())
+  nama        String
+  pembayaran  Pembayaran[]
+  createdAt   DateTime     @default(now())
+}
+
+model Pertemuan {
+  id          Int          @id @default(autoincrement())
+  hari        String       // contoh: "Kamis"
+  tanggal     String       // contoh: "3"
+  pembayaran  Pembayaran[]
+  createdAt   DateTime     @default(now())
+}
+
+model Pembayaran {
+  id          Int       @id @default(autoincrement())
+  anggotaId   Int
+  pertemuanId Int
+  status      Boolean   @default(false)
+
+  anggota     Anggota   @relation(fields: [anggotaId], references: [id], onDelete: Cascade)
+  pertemuan   Pertemuan @relation(fields: [pertemuanId], references: [id], onDelete: Cascade)
+
+  @@unique([anggotaId, pertemuanId])
+}
+
+model Pengaturan {
+  id        Int    @id @default(1)
+  periode   String @default("Oktober 2026")
+  nominal   Int    @default(10000)
+}
