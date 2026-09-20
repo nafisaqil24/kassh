@@ -59,6 +59,17 @@ export default function App() {
     }
   }, [gasUrl]);
 
+  // Auto-refresh data setiap 30 detik selama URL Apps Script sudah terhubung
+  useEffect(() => {
+    if (!gasUrl) return;
+
+    const interval = setInterval(() => {
+      fetchDataFromGas(gasUrl);
+    }, 30000); // 30000 ms = 30 detik
+
+    return () => clearInterval(interval);
+  }, [gasUrl]);
+
   const fetchDataFromGas = async (url: string) => {
     try {
       setLoading(true);
