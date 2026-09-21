@@ -3,6 +3,7 @@ var SHEET_ANGGOTA = 'Anggota';
 var SHEET_PERTEMUAN = 'Pertemuan';
 var SHEET_PEMBAYARAN = 'Pembayaran';
 var SHEET_PENGATURAN = 'Pengaturan';
+var SHEET_PENGELUARAN = 'Pengeluaran';
 
 /**
  * Helper: Membaca 1 sheet menjadi array of object berdasarkan header baris pertama.
@@ -51,6 +52,7 @@ function doGet(e) {
     var anggota = sheetToObjects(SHEET_ANGGOTA);
     var pertemuan = sheetToObjects(SHEET_PERTEMUAN);
     var pembayaran = sheetToObjects(SHEET_PEMBAYARAN);
+    var pengeluaran = sheetToObjects(SHEET_PENGELUARAN);
     var pengaturanRaw = sheetToObjects(SHEET_PENGATURAN);
 
     var pengaturan = {};
@@ -64,6 +66,7 @@ function doGet(e) {
       anggota: anggota,
       pertemuan: pertemuan,
       pembayaran: pembayaran,
+      pengeluaran: pengeluaran,
       pengaturan: pengaturan
     };
 
@@ -99,6 +102,10 @@ function doPost(e) {
       hapusPertemuan(body.id);
     } else if (action === 'updatePengaturan') {
       updatePengaturan(body.key, body.value);
+    } else if (action === 'tambahPengeluaran') {
+      tambahPengeluaran(body.tanggal, body.keterangan, body.nominal);
+    } else if (action === 'hapusPengeluaran') {
+      hapusPengeluaran(body.id);
     } else {
       result = { success: false, error: 'Aksi tidak dikenali' };
     }
@@ -363,4 +370,49 @@ function bersihkanDuplikatPembayaran() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Aksi: Menambah pengeluaran kas.
+ */
+function tambahPengeluaran(tanggal, keterangan, nominal) {
+  if (!keterangan || String(keterangan).trim() === '') {
+    throw new Error('Keterangan pengeluaran wajib diisi');
+  }
+  var nom = Number(nominal);
+  if (isNaN(nom) || nom <= 0) {
+    throw new Error('Nominal pengeluaran harus lebih besar dari 0');
+  }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_PENGELUARAN);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_PENGELUARAN);
+    sheet.appendRow(['id', 'tanggal', 'keterangan', 'nominal']);
+  }
+  var newId = 'x' + new Date().getTime();
+  
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 0) {
+    var colTanggal = getColumnIndex(sheet, 'tanggal', 2);
+    sheet.getRange(lastRow + 1, colTanggal).setNumberFormat('@');
+  }
+  
+  sheet.appendRow([newId, String(tanggal || ''), String(keterangan).trim(), nom]);
+}
+
+/**
+ * Aksi: Menghapus pengeluaran berdasarkan ID.
+ */
+function hapusPengeluaran(id) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGELUARAN);
+  if (!sheet) throw new Error('Sheet Pengeluaran tidak ditemukan');
+  
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return;
+    }
+  }
+  throw new Error('Data pengeluaran dengan ID tersebut tidak ditemukan');
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
-  TrendingUp, RefreshCw, CheckCircle2
+  TrendingUp, RefreshCw, CheckCircle2, Receipt
 } from 'lucide-react';
 
 interface Anggota {
@@ -22,9 +22,40 @@ interface Pembayaran {
   status: boolean;
 }
 
+interface Pengeluaran {
+  id: string | number;
+  tanggal: string;
+  keterangan: string;
+  nominal: number;
+}
+
 interface Pengaturan {
   periode: string;
   nominal: number;
+}
+
+// A1. Helper: Normalisasi data pengeluaran dari Google Sheets
+function normalizePengeluaran(rows: any[]): Pengeluaran[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => {
+    if (!row) return null;
+    const getVal = (keys: string[]) => {
+      for (const k of keys) {
+        const foundKey = Object.keys(row).find(
+          (rk) => rk.toLowerCase() === k.toLowerCase()
+        );
+        if (foundKey !== undefined) return row[foundKey];
+      }
+      return undefined;
+    };
+
+    const id = getVal(['id']) ?? ('x' + Math.random());
+    const tanggal = String(getVal(['tanggal', 'date']) || '');
+    const keterangan = String(getVal(['keterangan', 'ket', 'deskripsi']) || '');
+    const nominal = Number(getVal(['nominal', 'jumlah', 'amount']) || 0);
+
+    return { id, tanggal, keterangan, nominal: isNaN(nominal) ? 0 : nominal };
+  }).filter(Boolean) as Pengeluaran[];
 }
 
 // A1. Helper: Normalisasi data pembayaran dari Google Sheets
@@ -105,18 +136,24 @@ export default function App() {
   const [anggota, setAnggota] = useState<Anggota[]>([]);
   const [pertemuan, setPertemuan] = useState<Pertemuan[]>([]);
   const [pembayaran, setPembayaran] = useState<Pembayaran[]>([]);
+  const [pengeluaran, setPengeluaran] = useState<Pengeluaran[]>([]);
   const [pengaturan, setPengaturan] = useState<Pengaturan>({ periode: 'Oktober 2026', nominal: 10000 });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'grid' | 'rekap' | 'pengaturan'>('grid');
+  const [activeTab, setActiveTab] = useState<'grid' | 'rekap' | 'pengeluaran' | 'pengaturan'>('grid');
   const [showAddAnggotaModal, setShowAddAnggotaModal] = useState(false);
   const [showAddPertemuanModal, setShowAddPertemuanModal] = useState(false);
+  const [showAddPengeluaranModal, setShowAddPengeluaranModal] = useState(false);
   
   const [newAnggotaNama, setNewAnggotaNama] = useState('');
   const [newHari, setNewHari] = useState('Kamis');
   const [newTanggal, setNewTanggal] = useState('');
+
+  const [newPengeluaranTanggal, setNewPengeluaranTanggal] = useState('');
+  const [newPengeluaranKeterangan, setNewPengeluaranKeterangan] = useState('');
+  const [newPengeluaranNominal, setNewPengeluaranNominal] = useState<number | ''>('');
 
   const [editPeriode, setEditPeriode] = useState('Oktober 2026');
   const [editNominal, setEditNominal] = useState(10000);
@@ -148,6 +185,7 @@ export default function App() {
       setAnggota(data.anggota || []);
       setPertemuan(data.pertemuan || []);
       setPembayaran(normalizePembayaran(data.pembayaran || []));
+      setPengeluaran(normalizePengeluaran(data.pengeluaran || []));
       if (data.pengaturan) {
         setPengaturan({
           periode: data.pengaturan.periode || 'Oktober 2026',
@@ -399,6 +437,70 @@ export default function App() {
     }
   };
 
+  // Add Pengeluaran
+  const handleAddPengeluaran = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mintaPassword()) return;
+    if (!newPengeluaranKeterangan.trim()) {
+      alert('Keterangan pengeluaran wajib diisi.');
+      return;
+    }
+    const nom = Number(newPengeluaranNominal);
+    if (isNaN(nom) || nom <= 0) {
+      alert('Nominal pengeluaran harus lebih besar dari 0.');
+      return;
+    }
+
+    if (!gasUrl) {
+      const newId = 'x' + Date.now();
+      setPengeluaran(prev => [{ id: newId, tanggal: newPengeluaranTanggal, keterangan: newPengeluaranKeterangan.trim(), nominal: nom }, ...prev]);
+      setNewPengeluaranTanggal('');
+      setNewPengeluaranKeterangan('');
+      setNewPengeluaranNominal('');
+      setShowAddPengeluaranModal(false);
+      return;
+    }
+
+    pendingWrites.current++;
+    try {
+      setLoading(true);
+      await callGasApi('tambahPengeluaran', { tanggal: newPengeluaranTanggal, keterangan: newPengeluaranKeterangan.trim(), nominal: nom });
+      if (gasUrl) await fetchDataFromGas(gasUrl, true);
+      setNewPengeluaranTanggal('');
+      setNewPengeluaranKeterangan('');
+      setNewPengeluaranNominal('');
+      setShowAddPengeluaranModal(false);
+    } catch (err: any) {
+      alert('Gagal menambah pengeluaran: ' + err.message);
+    } finally {
+      pendingWrites.current--;
+      setLoading(false);
+    }
+  };
+
+  // Delete Pengeluaran
+  const handleDeletePengeluaran = async (id: string | number, keterangan: string) => {
+    if (!mintaPassword()) return;
+    if (!confirm(`Hapus pengeluaran "${keterangan}"?`)) return;
+
+    if (!gasUrl) {
+      setPengeluaran(prev => prev.filter(p => p.id !== id));
+      return;
+    }
+
+    pendingWrites.current++;
+    try {
+      setLoading(true);
+      await callGasApi('hapusPengeluaran', { id });
+      if (gasUrl) await fetchDataFromGas(gasUrl, true);
+    } catch (err: any) {
+      alert('Gagal menghapus pengeluaran: ' + err.message);
+    } finally {
+      pendingWrites.current--;
+      setLoading(false);
+    }
+  };
+
   // A4. Save Pengaturan
   const handleSavePengaturan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,6 +539,8 @@ export default function App() {
 
   const totalLunasCount = validPembayaran.filter((p) => p.status === true).length;
   const totalKasTerkumpul = totalLunasCount * pengaturan.nominal;
+  const totalPengeluaran = pengeluaran.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0);
+  const saldoKas = totalKasTerkumpul - totalPengeluaran;
 
   const tunggakanList = anggota.map((a) => {
     const belumBayar = pertemuan.filter((pt) => {
@@ -502,6 +606,14 @@ export default function App() {
             }`}
           >
             <TrendingUp className="w-4 h-4" /> Panel Rekap & Tunggakan ({tunggakanList.length} Nunggak)
+          </button>
+          <button
+            onClick={() => setActiveTab('pengeluaran')}
+            className={`px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'pengeluaran' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            }`}
+          >
+            <Receipt className="w-4 h-4" /> Pengeluaran ({pengeluaran.length})
           </button>
           <button
             onClick={() => setActiveTab('pengaturan')}
@@ -677,7 +789,7 @@ export default function App() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Total Kas Terkumpul</p>
+                <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
                 <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
                   Rp {totalKasTerkumpul.toLocaleString('id-ID')}
                 </p>
@@ -687,19 +799,23 @@ export default function App() {
               </div>
 
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Total Pertemuan</p>
-                <p className="text-3xl font-serif-title font-bold text-[#ECE6D8] mt-2">
-                  {pertemuan.length} Sesi
+                <p className="text-sm text-[#8C9199]">Total Pengeluaran Kas</p>
+                <p className="text-3xl font-serif-title font-bold text-amber-400 mt-2">
+                  Rp {totalPengeluaran.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">Periode {pengaturan.periode}</p>
+                <p className="text-xs text-[#8C9199] mt-1">
+                  Dari {pengeluaran.length} catatan pengeluaran
+                </p>
               </div>
 
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Anggota Belum Lunas Total</p>
-                <p className="text-3xl font-serif-title font-bold text-red-400 mt-2">
-                  {tunggakanList.length} Orang
+                <p className="text-sm text-[#8C9199]">Saldo Kas Bersih</p>
+                <p className={`text-3xl font-serif-title font-bold mt-2 ${saldoKas < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                  Rp {saldoKas.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">Memiliki tunggakan kas</p>
+                <p className="text-xs text-[#8C9199] mt-1">
+                  {saldoKas < 0 ? '⚠️ Saldo kas minus / defisit' : 'Pemasukan - Pengeluaran'}
+                </p>
               </div>
             </div>
 
@@ -739,6 +855,69 @@ export default function App() {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'pengeluaran' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+              <div>
+                <h3 className="text-lg font-serif-title font-semibold">Daftar Pengeluaran Kas</h3>
+                <p className="text-xs text-[#8C9199]">Catat dan kelola pengeluaran kas organisasi. Data otomatis tersimpan ke Google Sheets.</p>
+              </div>
+              <button
+                onClick={() => setShowAddPengeluaranModal(true)}
+                className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Tambah Pengeluaran
+              </button>
+            </div>
+
+            <div className="bg-[#2B3036] rounded-lg border border-[#383D44] shadow overflow-hidden">
+              <div className="overflow-x-auto max-h-[70vh]">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="sticky top-0 z-20 bg-[#2F343B] text-[#ECE6D8] border-b border-[#383D44]">
+                    <tr>
+                      <th className="px-4 py-3 font-serif-title min-w-[120px]">Tanggal</th>
+                      <th className="px-4 py-3 font-serif-title min-w-[250px]">Keterangan</th>
+                      <th className="px-4 py-3 font-serif-title text-right min-w-[150px]">Nominal (Rp)</th>
+                      <th className="px-4 py-3 font-serif-title text-center min-w-[80px]">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#383D44]/60">
+                    {pengeluaran.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center py-8 text-[#8C9199]">
+                          Belum ada data pengeluaran kas.
+                        </td>
+                      </tr>
+                    ) : (
+                      pengeluaran.map((item, idx) => {
+                        const bgBaris = idx % 2 === 0 ? 'bg-[#262A2F]' : 'bg-[#2B3036]';
+                        return (
+                          <tr key={item.id} className={`${bgBaris} hover:bg-[#383D44]/40 transition`}>
+                            <td className="px-4 py-3 font-medium text-[#ECE6D8]">{item.tanggal || '-'}</td>
+                            <td className="px-4 py-3 text-[#ECE6D8]">{item.keterangan}</td>
+                            <td className="px-4 py-3 text-right font-bold text-amber-400">
+                              Rp {Number(item.nominal || 0).toLocaleString('id-ID')}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => handleDeletePengeluaran(item.id, item.keterangan)}
+                                className="text-[#8C9199] hover:text-red-400 p-1.5 rounded transition"
+                                title="Hapus pengeluaran"
+                              >
+                                <Trash2 className="w-4 h-4 inline" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -879,6 +1058,66 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddPertemuanModal(false)}
+                  className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] rounded font-medium"
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah Pengeluaran */}
+      {showAddPengeluaranModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#2B3036] border border-[#383D44] rounded-lg max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-serif-title font-semibold mb-4">Tambah Pengeluaran Kas</h3>
+            <form onSubmit={handleAddPengeluaran} className="space-y-4">
+              <div>
+                <label className="block text-sm text-[#8C9199] mb-1">Tanggal (opsional)</label>
+                <input
+                  type="text"
+                  value={newPengeluaranTanggal}
+                  onChange={(e) => setNewPengeluaranTanggal(e.target.value)}
+                  placeholder="contoh: 10 Oktober 2026"
+                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#8C9199] mb-1">Keterangan Pengeluaran *</label>
+                <input
+                  type="text"
+                  value={newPengeluaranKeterangan}
+                  onChange={(e) => setNewPengeluaranKeterangan(e.target.value)}
+                  placeholder="contoh: Konsumsi rapat / Beli ATK"
+                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#8C9199] mb-1">Nominal (Rp) *</label>
+                <input
+                  type="number"
+                  value={newPengeluaranNominal}
+                  onChange={(e) => setNewPengeluaranNominal(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="contoh: 50000"
+                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  min="1"
+                  step="1"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPengeluaranModal(false)}
                   className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
                 >
                   Batal
