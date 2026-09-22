@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
-  TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown
+  TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown, Maximize2
 } from 'lucide-react';
 import { exportLaporanPdf } from './exportPdf';
 
@@ -254,7 +254,31 @@ export default function App() {
   });
   const [isLandscapeDismissed, setIsLandscapeDismissed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('kassh_dismiss_landscape_banner') === 'true';
+      const stored = localStorage.getItem('kassh_dismiss_landscape_banner');
+      if (!stored) return false;
+
+      // Fallback for legacy boolean format ('true' / 'false')
+      if (stored === 'true') {
+        localStorage.setItem('kassh_dismiss_landscape_banner', Date.now().toString());
+        return true;
+      }
+      if (stored === 'false') {
+        localStorage.removeItem('kassh_dismiss_landscape_banner');
+        return false;
+      }
+
+      const dismissedTime = Number(stored);
+      if (isNaN(dismissedTime)) {
+        return false;
+      }
+
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - dismissedTime > SEVEN_DAYS_MS) {
+        localStorage.removeItem('kassh_dismiss_landscape_banner');
+        return false;
+      }
+
+      return true;
     } catch {
       return false;
     }
@@ -338,7 +362,7 @@ export default function App() {
   const dismissLandscapeBanner = () => {
     setIsLandscapeDismissed(true);
     try {
-      localStorage.setItem('kassh_dismiss_landscape_banner', 'true');
+      localStorage.setItem('kassh_dismiss_landscape_banner', Date.now().toString());
     } catch (err) {}
   };
 
@@ -888,19 +912,32 @@ export default function App() {
       {/* Header */}
       <header className="bg-[#2F343B] border-b border-[#383D44] px-4 py-4 md:px-8 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 self-stretch bg-[#C9A882] rounded-full hidden md:block"></div>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-serif-title font-bold tracking-widest text-[#ECE6D8]">
-                UANG KAS
-              </h1>
-              <div className="flex items-center gap-3 mt-2">
-                <span className="bg-[#C9A882] text-[#1E2125] px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide">
-                  {pengaturan.periode}
-                </span>
-                <span className="text-xs text-[#8C9199] uppercase tracking-wide">Selasa / Kamis / Sabtu</span>
+          <div className="flex items-center justify-between w-full md:w-auto">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 self-stretch bg-[#C9A882] rounded-full hidden md:block"></div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-serif-title font-bold tracking-widest text-[#ECE6D8]">
+                  UANG KAS
+                </h1>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="bg-[#C9A882] text-[#1E2125] px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide">
+                    {pengaturan.periode}
+                  </span>
+                  <span className="text-xs text-[#8C9199] uppercase tracking-wide">Selasa / Kamis / Sabtu</span>
+                </div>
               </div>
             </div>
+
+            {canFullscreenAndLock && (
+              <button
+                onClick={handleToggleFullscreen}
+                className="md:hidden bg-[#383D44] hover:bg-[#484E58] text-[#C9A882] p-2.5 rounded-lg flex items-center justify-center transition border border-[#484E58] shrink-0"
+                title="Layar Penuh & Landscape"
+                aria-label="Layar Penuh & Landscape"
+              >
+                <Maximize2 className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-6">
