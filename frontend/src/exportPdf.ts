@@ -81,6 +81,8 @@ const TH_STYLE =
 
 const TD_STYLE = 'border:1px solid #d9d3c4;padding:5px 8px;vertical-align:top;';
 
+const TR_STYLE = 'page-break-inside:avoid;break-inside:avoid;';
+
 /** A4 portrait @96dpi ≈ 210mm; padanan konsisten dengan setup sebelumnya (794px). */
 const PORTRAIT_WIDTH = 794;
 /** A4 landscape @96dpi ≈ 297mm — target render section Tabel Kas. */
@@ -143,12 +145,12 @@ function buildGridHtml(data: LaporanPayload): string {
             `<td style="${TD_STYLE};text-align:center;color:${st ? '#0a7a3d' : '#999'};font-weight:700;">${st ? '✓' : '-'}</td>`
         )
         .join('');
-      return `<tr><td style="${TD_STYLE};font-weight:600;">${escapeHtml(row.nama)}</td>${cells}<td style="${TD_STYLE};text-align:center;font-weight:700;">${escapeHtml(row.totalBayar)}</td></tr>`;
+      return `<tr style="${TR_STYLE}"><td style="${TD_STYLE};font-weight:600;">${escapeHtml(row.nama)}</td>${cells}<td style="${TD_STYLE};text-align:center;font-weight:700;">${escapeHtml(row.totalBayar)}</td></tr>`;
     })
     .join('');
 
   return `<table style="${TABLE_STYLE}">
-    <thead><tr><th style="${TH_STYLE};min-width:140px;">Nama Anggota</th>${headerCells}<th style="${TH_STYLE};text-align:center;">Total</th></tr></thead>
+    <thead><tr style="${TR_STYLE}"><th style="${TH_STYLE};min-width:140px;">Nama Anggota</th>${headerCells}<th style="${TH_STYLE};text-align:center;">Total</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -175,11 +177,11 @@ function buildRekapHtml(data: LaporanPayload): string {
     const rows = data.tunggakan
       .map(
         (t) =>
-          `<tr><td style="${TD_STYLE};">${escapeHtml(t.nama)}</td><td style="${TD_STYLE};text-align:center;">${t.jumlahBelumBayar} pertemuan</td><td style="${TD_STYLE};text-align:right;font-weight:700;color:#b91c1c;">${rupiah(t.totalTunggakanRupiah)}</td></tr>`
+          `<tr style="${TR_STYLE}"><td style="${TD_STYLE};">${escapeHtml(t.nama)}</td><td style="${TD_STYLE};text-align:center;">${t.jumlahBelumBayar} pertemuan</td><td style="${TD_STYLE};text-align:right;font-weight:700;color:#b91c1c;">${rupiah(t.totalTunggakanRupiah)}</td></tr>`
       )
       .join('');
     tunggakanHtml = `<table style="${TABLE_STYLE}">
-      <thead><tr><th style="${TH_STYLE};">Nama Anggota</th><th style="${TH_STYLE};text-align:center;">Belum Bayar</th><th style="${TH_STYLE};text-align:right;">Total Tunggakan</th></tr></thead>
+      <thead><tr style="${TR_STYLE}"><th style="${TH_STYLE};">Nama Anggota</th><th style="${TH_STYLE};text-align:center;">Belum Bayar</th><th style="${TH_STYLE};text-align:right;">Total Tunggakan</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
@@ -194,11 +196,11 @@ function buildPemasukanHtml(data: LaporanPayload): string {
   const rows = data.riwayatPemasukan
     .map(
       (p) =>
-        `<tr><td style="${TD_STYLE};font-weight:600;">${escapeHtml(p.nama)}</td><td style="${TD_STYLE};">${escapeHtml(p.hari)}, ${escapeHtml(p.tanggal)} ${escapeHtml(data.periode)}</td><td style="${TD_STYLE};text-align:right;font-weight:700;color:#0a7a3d;">${rupiah(p.nominal)}</td></tr>`
+        `<tr style="${TR_STYLE}"><td style="${TD_STYLE};font-weight:600;">${escapeHtml(p.nama)}</td><td style="${TD_STYLE};">${escapeHtml(p.hari)}, ${escapeHtml(p.tanggal)} ${escapeHtml(data.periode)}</td><td style="${TD_STYLE};text-align:right;font-weight:700;color:#0a7a3d;">${rupiah(p.nominal)}</td></tr>`
     )
     .join('');
   return `<table style="${TABLE_STYLE}">
-    <thead><tr><th style="${TH_STYLE};">Nama</th><th style="${TH_STYLE};">Waktu Bayar</th><th style="${TH_STYLE};text-align:right;">Nominal</th></tr></thead>
+    <thead><tr style="${TR_STYLE}"><th style="${TH_STYLE};">Nama</th><th style="${TH_STYLE};">Waktu Bayar</th><th style="${TH_STYLE};text-align:right;">Nominal</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -210,11 +212,11 @@ function buildPengeluaranHtml(data: LaporanPayload): string {
   const rows = data.pengeluaran
     .map(
       (p) =>
-        `<tr><td style="${TD_STYLE};">${escapeHtml(p.tanggal)}</td><td style="${TD_STYLE};">${escapeHtml(p.keterangan)}</td><td style="${TD_STYLE};text-align:right;font-weight:700;color:#a16207;">${rupiah(p.nominal)}</td></tr>`
+        `<tr style="${TR_STYLE}"><td style="${TD_STYLE};">${escapeHtml(p.tanggal)}</td><td style="${TD_STYLE};">${escapeHtml(p.keterangan)}</td><td style="${TD_STYLE};text-align:right;font-weight:700;color:#a16207;">${rupiah(p.nominal)}</td></tr>`
     )
     .join('');
   return `<table style="${TABLE_STYLE}">
-    <thead><tr><th style="${TH_STYLE};">Tanggal</th><th style="${TH_STYLE};">Keterangan</th><th style="${TH_STYLE};text-align:right;">Nominal</th></tr></thead>
+    <thead><tr style="${TR_STYLE}"><th style="${TH_STYLE};">Tanggal</th><th style="${TH_STYLE};">Keterangan</th><th style="${TH_STYLE};text-align:right;">Nominal</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
