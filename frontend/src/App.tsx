@@ -1009,32 +1009,54 @@ export default function App() {
                   🎉 Luar biasa! Semua anggota sudah melunasi seluruh kas pertemuan.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#383D44] text-[#8C9199]">
-                        <th className="py-3 px-4">Nama Anggota</th>
-                        <th className="py-3 px-4 text-center">Jumlah Belum Bayar</th>
-                        <th className="py-3 px-4 text-right">Total Tunggakan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#383D44]/50">
-                      {tunggakanList.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#383D44]/40">
-                          <td className="py-3 px-4 font-medium text-[#ECE6D8]">{item.nama}</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-red-950/60 text-red-400 border border-red-900/50 px-2.5 py-1 rounded-full text-xs font-bold">
-                              {item.jumlahBelumBayar} pertemuan
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right font-bold text-red-400">
+                <>
+                  {/* Mobile: Stacked Card Layout (< md) */}
+                  <div className="md:hidden space-y-3">
+                    {tunggakanList.map((item) => (
+                      <div key={item.id} className="bg-[#1E2125] border border-[#383D44] rounded-lg p-3.5 shadow-sm space-y-2">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="font-medium text-[#ECE6D8] text-sm">{item.nama}</span>
+                          <span className="font-bold text-red-400 text-sm whitespace-nowrap">
                             Rp {item.totalTunggakanRupiah.toLocaleString('id-ID')}
-                          </td>
+                          </span>
+                        </div>
+                        <div>
+                          <span className="inline-block bg-red-950/60 text-red-400 border border-red-900/50 px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap">
+                            {item.jumlahBelumBayar} pertemuan belum bayar
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop: 3-column Table (md and above) */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#383D44] text-[#8C9199]">
+                          <th className="py-3 px-4">Nama Anggota</th>
+                          <th className="py-3 px-4 text-center">Jumlah Belum Bayar</th>
+                          <th className="py-3 px-4 text-right">Total Tunggakan</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-[#383D44]/50">
+                        {tunggakanList.map((item) => (
+                          <tr key={item.id} className="hover:bg-[#383D44]/40">
+                            <td className="py-3 px-4 font-medium text-[#ECE6D8]">{item.nama}</td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="bg-red-950/60 text-red-400 border border-red-900/50 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                                {item.jumlahBelumBayar} pertemuan
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right font-bold text-red-400 whitespace-nowrap">
+                              Rp {item.totalTunggakanRupiah.toLocaleString('id-ID')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
