@@ -205,7 +205,6 @@ function getInitialGasUrl(): string {
 }
 
 export default function App() {
-  const APP_PASSWORD = 'PSHTJAYA';
 
   const [gasUrl, setGasUrl] = useState<string>(getInitialGasUrl);
 
@@ -480,20 +479,8 @@ export default function App() {
     }
   };
 
-  // Minta password sebelum melakukan perubahan data
-  const mintaPassword = (): boolean => {
-    const input = prompt('Masukkan password untuk melakukan perubahan:');
-    if (input === null) return false; // user klik Cancel
-    if (input !== APP_PASSWORD) {
-      alert('Password salah!');
-      return false;
-    }
-    return true;
-  };
-
   // A3. Toggle Pembayaran aman dengan anti double-click & optimistic update
   const handleTogglePembayaran = async (anggotaId: string | number, pertemuanId: string | number) => {
-    if (!mintaPassword()) return;
     const key = `${anggotaId}-${pertemuanId}`;
     if (activeToggles.current.has(key)) return;
     activeToggles.current.add(key);
@@ -552,7 +539,6 @@ export default function App() {
   // A4. Add Anggota
   const handleAddAnggota = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mintaPassword()) return;
     if (!newAnggotaNama.trim()) return;
 
     if (!gasUrl) {
@@ -580,7 +566,6 @@ export default function App() {
 
   // A4. Delete Anggota
   const handleDeleteAnggota = async (id: string | number, nama: string) => {
-    if (!mintaPassword()) return;
     if (!confirm(`Hapus anggota ${nama}?`)) return;
 
     if (!gasUrl) {
@@ -604,7 +589,6 @@ export default function App() {
   // A4. Add Pertemuan
   const handleAddPertemuan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mintaPassword()) return;
     if (!newHari.trim() || !newTanggal.trim()) return;
 
     if (!gasUrl) {
@@ -632,7 +616,6 @@ export default function App() {
 
   // A4. Delete Pertemuan
   const handleDeletePertemuan = async (id: string | number, tanggal: string, hari: string) => {
-    if (!mintaPassword()) return;
     if (!confirm(`Hapus pertemuan hari ${hari} tanggal ${tanggal}?`)) return;
 
     if (!gasUrl) {
@@ -656,7 +639,6 @@ export default function App() {
   // Add Pengeluaran
   const handleAddPengeluaran = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mintaPassword()) return;
     if (!newPengeluaranKeterangan.trim()) {
       alert('Keterangan pengeluaran wajib diisi.');
       return;
@@ -696,7 +678,6 @@ export default function App() {
 
   // Delete Pengeluaran
   const handleDeletePengeluaran = async (id: string | number, keterangan: string) => {
-    if (!mintaPassword()) return;
     if (!confirm(`Hapus pengeluaran "${keterangan}"?`)) return;
 
     if (!gasUrl) {
@@ -720,7 +701,6 @@ export default function App() {
   // A4. Save Pengaturan
   const handleSavePengaturan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mintaPassword()) return;
     const newConfig = { periode: editPeriode, nominal: Number(editNominal) };
     setPengaturan(newConfig);
     localStorage.setItem('gas_web_app_url', inputGasUrl.trim());
@@ -918,7 +898,7 @@ export default function App() {
               activeTab === 'pengaturan' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
             }`}
           >
-            <Settings className="w-4 h-4" /> Pengaturan & URL Sheets {gasUrl ? '🟢' : '🔴'}
+            <Settings className="w-4 h-4" /> Pengaturan {gasUrl ? '🟢' : '🔴'}
           </button>
         </div>
       </header>
