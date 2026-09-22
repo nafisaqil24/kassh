@@ -122,6 +122,59 @@ function normalizePembayaran(rows: any[]): Pembayaran[] {
   return Array.from(map.values());
 }
 
+// Helper: Normalisasi tanggal pertemuan
+function formatTanggalPertemuan(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) return '';
+  const trimmed = String(value).trim();
+  if (!trimmed) return '';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+    try {
+      const date = new Date(trimmed);
+      if (!isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          day: 'numeric'
+        }).format(date);
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+  return trimmed;
+}
+
+// Helper: Kapitalisasi nama hari (huruf pertama besar)
+function kapitalisasiHari(hari: string | undefined | null): string {
+  if (!hari) return '';
+  const trimmed = String(hari).trim();
+  if (!trimmed) return '';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
+// Helper: Normalisasi data pertemuan dari Google Sheets
+function normalizePertemuan(rows: any[]): Pertemuan[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => {
+    if (!row) return null;
+    const getVal = (keys: string[]) => {
+      for (const k of keys) {
+        const foundKey = Object.keys(row).find(
+          (rk) => rk.toLowerCase() === k.toLowerCase()
+        );
+        if (foundKey !== undefined) return row[foundKey];
+      }
+      return undefined;
+    };
+
+    const id = getVal(['id']) ?? ('x' + Math.random());
+    const hari = kapitalisasiHari(String(getVal(['hari', 'day']) || ''));
+    const tanggalRaw = getVal(['tanggal', 'date']);
+    const tanggal = formatTanggalPertemuan(tanggalRaw);
+
+    return { id, hari, tanggal };
+  }).filter(Boolean) as Pertemuan[];
+}
+
 function getInitialGasUrl(): string {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -165,7 +218,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'grid' | 'rekap' | 'pengeluaran' | 'pengaturan'>('grid');
+  const [activeTab, setActiveTab] = useState<'grid' | 'rekap' | 'pengeluaran' | 'riwayat' | 'pengaturan'>('grid');
   const [showAddAnggotaModal, setShowAddAnggotaModal] = useState(false);
   const [showAddPertemuanModal, setShowAddPertemuanModal] = useState(false);
   const [showAddPengeluaranModal, setShowAddPengeluaranModal] = useState(false);
@@ -345,9 +398,9 @@ export default function App() {
 
       if (silent && pendingWrites.current > 0) return;
 
-      setAnggota(data.anggota || []);
-      setPertemuan(data.pertemuan || []);
-      setPembayaran(normalizePembayaran(data.pembayaran || []));
+       setAnggota(data.anggota || []);
+       setPertemuan(normalizePertemuan(data.pertemuan || []));
+       setPembayaran(normalizePembayaran(data.pembayaran || []));
       setPengeluaran(normalizePengeluaran(data.pengeluaran || []));
       if (data.pengaturan) {
         setPengaturan({
@@ -556,7 +609,7 @@ export default function App() {
 
     if (!gasUrl) {
       const newId = 'p' + Date.now();
-      setPertemuan(prev => [...prev, { id: newId, hari: newHari, tanggal: newTanggal.trim() }]);
+      setPertemuan(prev => [...prev, { id: newId, hari: kapitalisasiHari(newHari), tanggal: formatTanggalPertemuan(newTanggal.trim()) }]);
       setNewTanggal('');
       setShowAddPertemuanModal(false);
       return;
@@ -565,7 +618,7 @@ export default function App() {
     pendingWrites.current++;
     try {
       setLoading(true);
-      await callGasApi('tambahPertemuan', { hari: newHari, tanggal: newTanggal.trim() });
+      await callGasApi('tambahPertemuan', { hari: kapitalisasiHari(newHari), tanggal: formatTanggalPertemuan(newTanggal.trim()) });
       if (gasUrl) await fetchDataFromGas(gasUrl, true);
       setNewTanggal('');
       setShowAddPertemuanModal(false);
@@ -717,6 +770,29 @@ export default function App() {
     };
   }).filter((a) => a.jumlahBelumBayar > 0);
 
+  const riwayatPemasukanList = validPembayaran
+    .filter(p => p.status === true)
+    .map(p => {
+      const ang = anggota.find(a => String(a.id) === String(p.anggotaId));
+      const pt = pertemuan.find(t => String(t.id) === String(p.pertemuanId));
+      return {
+        id: `${p.anggotaId}-${p.pertemuanId}`,
+        nama: ang ? ang.nama : '',
+        hari: pt ? kapitalisasiHari(pt.hari) : '',
+        tanggal: pt ? formatTanggalPertemuan(pt.tanggal) : '',
+        tanggalNum: pt ? Number(formatTanggalPertemuan(pt.tanggal)) || 0 : 0,
+        nominal: pengaturan.nominal,
+      };
+    })
+    .filter(item => item.nama && item.tanggal);
+
+  riwayatPemasukanList.sort((a, b) => {
+    if (b.tanggalNum !== a.tanggalNum) {
+      return b.tanggalNum - a.tanggalNum;
+    }
+    return a.nama.localeCompare(b.nama, 'id');
+  });
+
   return (
     <div className="min-h-screen bg-[#1E2125] text-[#ECE6D8] flex flex-col">
       {isFullscreen && (
@@ -821,6 +897,14 @@ export default function App() {
             <TrendingUp className="w-4 h-4" /> Panel Rekap & Tunggakan ({tunggakanList.length} Nunggak)
           </button>
           <button
+            onClick={() => setActiveTab('riwayat')}
+            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'riwayat' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4" /> Pemasukan ({riwayatPemasukanList.length})
+          </button>
+          <button
             onClick={() => setActiveTab('pengeluaran')}
             className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
               activeTab === 'pengeluaran' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
@@ -911,8 +995,8 @@ export default function App() {
                           'text-[#8C9199]';
                         return (
                           <th key={pt.id} className="px-3 py-3 text-center border-r border-[#383D44]/50 min-w-[70px]">
-                            <div className={`text-xs font-bold uppercase ${warnaHari}`}>{pt.hari}</div>
-                            <div className="text-sm font-semibold">{pt.tanggal}</div>
+                            <div className={`text-xs font-bold uppercase ${warnaHari}`}>{kapitalisasiHari(pt.hari)}</div>
+                            <div className="text-sm font-semibold">{formatTanggalPertemuan(pt.tanggal)}</div>
                             <button
                               onClick={() => handleDeletePertemuan(pt.id, pt.tanggal, pt.hari)}
                               className="mt-1 text-[#8C9199] hover:text-red-400 transition block mx-auto"
@@ -1089,6 +1173,51 @@ export default function App() {
                     </table>
                   </div>
                 </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'riwayat' && (
+          <div className="space-y-6">
+            <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
+              <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
+              <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
+                Rp {totalKasTerkumpul.toLocaleString('id-ID')}
+              </p>
+              <p className="text-xs text-[#8C9199] mt-1">
+                Dari {riwayatPemasukanList.length} pembayaran lunas tercatat
+              </p>
+            </div>
+
+            <div className="bg-[#2B3036] border border-[#383D44] rounded-lg p-5 shadow space-y-4">
+              <div>
+                <h3 className="text-lg font-serif-title font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Riwayat Pemasukan
+                </h3>
+                <p className="text-xs text-[#8C9199] mt-0.5">Daftar lengkap seluruh pembayaran kas secara kronologis.</p>
+              </div>
+
+              {riwayatPemasukanList.length === 0 ? (
+                <div className="text-center py-8 text-[#8C9199] bg-[#1E2125]/50 rounded border border-[#383D44]">
+                  Belum ada pemasukan tercatat.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {riwayatPemasukanList.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="bg-[#1E2125] border border-[#383D44] rounded-lg p-3.5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
+                    >
+                      <div className="text-[#ECE6D8] text-sm">
+                        <span className="font-bold text-[#C9A882]">{item.nama}</span> bayar pada {item.hari}, {item.tanggal} {pengaturan.periode}
+                      </div>
+                      <div className="font-bold text-emerald-400 text-sm whitespace-nowrap">
+                        — Rp {item.nominal.toLocaleString('id-ID')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
