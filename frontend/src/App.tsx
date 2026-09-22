@@ -186,14 +186,14 @@ export default function App() {
   // State untuk saran landscape & layar penuh
   const [isPortrait, setIsPortrait] = useState<boolean>(() => {
     try {
-      return window.matchMedia('(orientation: portrait)').matches;
+      return window.matchMedia('(orientation: portrait)').matches || window.innerHeight > window.innerWidth;
     } catch {
-      return false;
+      return window.innerHeight > window.innerWidth;
     }
   });
   const [isSmallScreen, setIsSmallScreen] = useState<boolean>(() => {
     try {
-      return window.matchMedia('(max-width: 767px)').matches;
+      return window.matchMedia('(max-width: 767px)').matches || window.innerWidth < 768;
     } catch {
       return window.innerWidth < 768;
     }
@@ -215,18 +215,38 @@ export default function App() {
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
 
   useEffect(() => {
-    const portraitQuery = window.matchMedia('(orientation: portrait)');
-    const smallQuery = window.matchMedia('(max-width: 767px)');
-
     const updateOrientation = () => {
-      setIsPortrait(portraitQuery.matches);
-      setIsSmallScreen(smallQuery.matches);
+      try {
+        const portrait = window.matchMedia('(orientation: portrait)').matches || window.innerHeight > window.innerWidth;
+        const small = window.matchMedia('(max-width: 767px)').matches || window.innerWidth < 768;
+        setIsPortrait(portrait);
+        setIsSmallScreen(small);
+      } catch {
+        setIsPortrait(window.innerHeight > window.innerWidth);
+        setIsSmallScreen(window.innerWidth < 768);
+      }
     };
 
     updateOrientation();
 
-    portraitQuery.addEventListener('change', updateOrientation);
-    smallQuery.addEventListener('change', updateOrientation);
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+
+    const portraitQuery = window.matchMedia('(orientation: portrait)');
+    const smallQuery = window.matchMedia('(max-width: 767px)');
+
+    try {
+      if (portraitQuery.addEventListener) {
+        portraitQuery.addEventListener('change', updateOrientation);
+      } else if ((portraitQuery as any).addListener) {
+        (portraitQuery as any).addListener(updateOrientation);
+      }
+      if (smallQuery.addEventListener) {
+        smallQuery.addEventListener('change', updateOrientation);
+      } else if ((smallQuery as any).addListener) {
+        (smallQuery as any).addListener(updateOrientation);
+      }
+    } catch (e) {}
 
     const handleFullscreenChange = () => {
       const inFullscreen = Boolean(document.fullscreenElement);
@@ -243,8 +263,20 @@ export default function App() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     return () => {
-      portraitQuery.removeEventListener('change', updateOrientation);
-      smallQuery.removeEventListener('change', updateOrientation);
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('orientationchange', updateOrientation);
+      try {
+        if (portraitQuery.removeEventListener) {
+          portraitQuery.removeEventListener('change', updateOrientation);
+        } else if ((portraitQuery as any).removeListener) {
+          (portraitQuery as any).removeListener(updateOrientation);
+        }
+        if (smallQuery.removeEventListener) {
+          smallQuery.removeEventListener('change', updateOrientation);
+        } else if ((smallQuery as any).removeListener) {
+          (smallQuery as any).removeListener(updateOrientation);
+        }
+      } catch (e) {}
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
