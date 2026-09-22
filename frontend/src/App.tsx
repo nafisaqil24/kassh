@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
-  TrendingUp, RefreshCw, CheckCircle2, Receipt
+  TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown
 } from 'lucide-react';
+import { exportLaporanPdf } from './exportPdf';
 
 interface Anggota {
   id: string | number;
@@ -234,6 +235,7 @@ export default function App() {
   const [editNominal, setEditNominal] = useState(10000);
   const [inputGasUrl, setInputGasUrl] = useState('');
   const [togglingKeys, setTogglingKeys] = useState<Set<string>>(new Set());
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   // State untuk saran landscape & layar penuh
   const [isPortrait, setIsPortrait] = useState<boolean>(() => {
@@ -773,6 +775,64 @@ export default function App() {
     return a.nama.localeCompare(b.nama, 'id');
   });
 
+  const handleExportPdf = async () => {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      await exportLaporanPdf({
+        periode: pengaturan.periode,
+        nominalPerSesi: pengaturan.nominal,
+        kolomPertemuan: pertemuan.map((pt) => ({
+          hari: kapitalisasiHari(pt.hari),
+          tanggal: formatTanggalPertemuan(pt.tanggal),
+        })),
+        grid: anggota.map((a) => {
+          const statuses = pertemuan.map((pt) => {
+            const p = validPembayaran.find(
+              (pay) =>
+                String(pay.anggotaId) === String(a.id) &&
+                String(pay.pertemuanId) === String(pt.id)
+            );
+            return Boolean(p && p.status);
+          });
+          const paidCount = statuses.filter(Boolean).length;
+          return {
+            nama: a.nama,
+            statuses,
+            totalBayar: `${paidCount}/${pertemuan.length}`,
+          };
+        }),
+        rekap: {
+          totalPemasukan: totalKasTerkumpul,
+          totalLunasCount,
+          totalPengeluaran,
+          jumlahPengeluaran: pengeluaran.length,
+          saldoKas,
+        },
+        tunggakan: tunggakanList.map((t) => ({
+          nama: t.nama,
+          jumlahBelumBayar: t.jumlahBelumBayar,
+          totalTunggakanRupiah: t.totalTunggakanRupiah,
+        })),
+        riwayatPemasukan: riwayatPemasukanList.map((p) => ({
+          nama: p.nama,
+          hari: p.hari,
+          tanggal: p.tanggal,
+          nominal: p.nominal,
+        })),
+        pengeluaran: pengeluaran.map((p) => ({
+          tanggal: formatTanggalPengeluaran(p.tanggal),
+          keterangan: p.keterangan,
+          nominal: Number(p.nominal) || 0,
+        })),
+      });
+    } catch (err: any) {
+      alert('Gagal mengekspor PDF: ' + (err?.message || 'Error tidak diketahui'));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1E2125] text-[#ECE6D8] flex flex-col">
       {isFullscreen && (
@@ -899,6 +959,19 @@ export default function App() {
             }`}
           >
             <Settings className="w-4 h-4" /> Pengaturan {gasUrl ? '🟢' : '🔴'}
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ml-auto border ${
+              exportingPdf
+                ? 'bg-[#383D44] text-[#8C9199] border-[#4A5058] opacity-70 cursor-wait'
+                : 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80 hover:bg-emerald-900/50'
+            }`}
+            title="Unduh laporan lengkap (Tabel Kas, Rekap, Pemasukan, Pengeluaran) sebagai PDF"
+          >
+            <FileDown className={`w-4 h-4 ${exportingPdf ? 'animate-pulse' : ''}`} />
+            {exportingPdf ? 'Mengekspor...' : 'Export PDF'}
           </button>
         </div>
       </header>
