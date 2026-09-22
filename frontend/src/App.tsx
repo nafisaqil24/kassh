@@ -34,6 +34,29 @@ interface Pengaturan {
   nominal: number;
 }
 
+// Helper: Format tanggal pengeluaran
+function formatTanggalPengeluaran(value: string | undefined | null): string {
+  if (!value) return '-';
+  const trimmed = String(value).trim();
+  if (!trimmed) return '-';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+    try {
+      const date = new Date(trimmed);
+      if (!isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }).format(date);
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+  return trimmed;
+}
+
 // A1. Helper: Normalisasi data pengeluaran dari Google Sheets
 function normalizePengeluaran(rows: any[]): Pengeluaran[] {
   if (!Array.isArray(rows)) return [];
@@ -50,7 +73,7 @@ function normalizePengeluaran(rows: any[]): Pengeluaran[] {
     };
 
     const id = getVal(['id']) ?? ('x' + Math.random());
-    const tanggal = String(getVal(['tanggal', 'date']) || '');
+    const tanggal = formatTanggalPengeluaran(String(getVal(['tanggal', 'date']) || ''));
     const keterangan = String(getVal(['keterangan', 'ket', 'deskripsi']) || '');
     const nominal = Number(getVal(['nominal', 'jumlah', 'amount']) || 0);
 
@@ -159,6 +182,114 @@ export default function App() {
   const [editNominal, setEditNominal] = useState(10000);
   const [inputGasUrl, setInputGasUrl] = useState('');
   const [togglingKeys, setTogglingKeys] = useState<Set<string>>(new Set());
+
+  // State untuk saran landscape & layar penuh
+  const [isPortrait, setIsPortrait] = useState<boolean>(() => {
+    try {
+      return window.matchMedia('(orientation: portrait)').matches;
+    } catch {
+      return false;
+    }
+  });
+  const [isSmallScreen, setIsSmallScreen] = useState<boolean>(() => {
+    try {
+      return window.matchMedia('(max-width: 767px)').matches;
+    } catch {
+      return window.innerWidth < 768;
+    }
+  });
+  const [isLandscapeDismissed, setIsLandscapeDismissed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('kassh_dismiss_landscape_banner') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(() => {
+    try {
+      return Boolean(document.fullscreenElement);
+    } catch {
+      return false;
+    }
+  });
+  const [fullscreenError, setFullscreenError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const portraitQuery = window.matchMedia('(orientation: portrait)');
+    const smallQuery = window.matchMedia('(max-width: 767px)');
+
+    const updateOrientation = () => {
+      setIsPortrait(portraitQuery.matches);
+      setIsSmallScreen(smallQuery.matches);
+    };
+
+    updateOrientation();
+
+    portraitQuery.addEventListener('change', updateOrientation);
+    smallQuery.addEventListener('change', updateOrientation);
+
+    const handleFullscreenChange = () => {
+      const inFullscreen = Boolean(document.fullscreenElement);
+      setIsFullscreen(inFullscreen);
+      if (!inFullscreen) {
+        try {
+          if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+            (screen.orientation as any).unlock();
+          }
+        } catch (err) {}
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      portraitQuery.removeEventListener('change', updateOrientation);
+      smallQuery.removeEventListener('change', updateOrientation);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const dismissLandscapeBanner = () => {
+    setIsLandscapeDismissed(true);
+    try {
+      localStorage.setItem('kassh_dismiss_landscape_banner', 'true');
+    } catch (err) {}
+  };
+
+  const handleToggleFullscreen = async () => {
+    setFullscreenError(null);
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+        if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
+          try {
+            await (screen.orientation as any).lock('landscape');
+          } catch (err) {
+            setFullscreenError('Perangkat ini belum mendukung kunci landscape, putar HP secara manual.');
+          }
+        }
+      } else {
+        if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+          try {
+            (screen.orientation as any).unlock();
+          } catch (err) {}
+        }
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      setFullscreenError('Gagal masuk/keluar layar penuh.');
+    }
+  };
+
+  const canFullscreenAndLock = Boolean(
+    typeof document.documentElement.requestFullscreen === 'function' && 
+    screen.orientation && 
+    typeof (screen.orientation as any).lock === 'function'
+  );
 
   // A2. Refs untuk pending writes, isFetching, dan active toggles
   const pendingWrites = useRef<number>(0);
@@ -556,6 +687,56 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#1E2125] text-[#ECE6D8] flex flex-col">
+      {isFullscreen && (
+        <div className="fixed top-2 right-2 z-50 flex flex-col items-end gap-1">
+          <button
+            onClick={handleToggleFullscreen}
+            className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-2.5 py-1 rounded text-xs font-medium shadow transition"
+            title="Keluar layar penuh"
+          >
+            Keluar layar penuh
+          </button>
+          {fullscreenError && (
+            <div className="bg-[#141b26] border border-amber-800/80 text-amber-300 px-2 py-1 rounded text-[10px] shadow max-w-[220px] text-right">
+              {fullscreenError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {isPortrait && isSmallScreen && !isLandscapeDismissed && (
+        <div 
+          role="status" 
+          className="bg-[#141b26] border-b border-[#383D44] text-[#ECE6D8] px-3 py-1.5 shadow-sm flex items-center justify-between gap-2 text-[11px] md:text-xs"
+        >
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <span className="text-[#C9A882] shrink-0">📱</span>
+            <span className="truncate">
+              Putar HP ke landscape agar tabel lebih lega.
+              {fullscreenError && <span className="block text-amber-300 text-[10px] mt-0.5">{fullscreenError}</span>}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {canFullscreenAndLock && (
+              <button
+                onClick={handleToggleFullscreen}
+                className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-2 py-1 rounded font-medium transition text-[11px]"
+              >
+                Putar & Layar Penuh
+              </button>
+            )}
+            <button
+              onClick={dismissLandscapeBanner}
+              className="text-[#8C9199] hover:text-[#ECE6D8] px-1.5 py-1 transition text-[11px]"
+              title="Tutup saran"
+            >
+              Tutup ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-[#2F343B] border-b border-[#383D44] px-4 py-4 md:px-8 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -593,7 +774,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex gap-2 mt-4 pt-3 border-t border-[#383D44] overflow-x-auto">
           <button
             onClick={() => setActiveTab('grid')}
-            className={`px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
               activeTab === 'grid' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
             }`}
           >
@@ -601,7 +782,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('rekap')}
-            className={`px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
               activeTab === 'rekap' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
             }`}
           >
@@ -609,7 +790,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('pengeluaran')}
-            className={`px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
               activeTab === 'pengeluaran' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
             }`}
           >
@@ -617,7 +798,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('pengaturan')}
-            className={`px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
               activeTab === 'pengaturan' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
             }`}
           >
@@ -897,7 +1078,7 @@ export default function App() {
                         const bgBaris = idx % 2 === 0 ? 'bg-[#262A2F]' : 'bg-[#2B3036]';
                         return (
                           <tr key={item.id} className={`${bgBaris} hover:bg-[#383D44]/40 transition`}>
-                            <td className="px-4 py-3 font-medium text-[#ECE6D8]">{item.tanggal || '-'}</td>
+                            <td className="px-4 py-3 font-medium text-[#ECE6D8]">{formatTanggalPengeluaran(item.tanggal)}</td>
                             <td className="px-4 py-3 text-[#ECE6D8]">{item.keterangan}</td>
                             <td className="px-4 py-3 text-right font-bold text-amber-400">
                               Rp {Number(item.nominal || 0).toLocaleString('id-ID')}
