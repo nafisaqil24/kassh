@@ -205,6 +205,30 @@ function getInitialGasUrl(): string {
   }
 }
 
+async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 2): Promise<any> {
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.toLowerCase().includes('application/json')) {
+        throw new Error('Response is not valid JSON (received HTML or non-JSON content)');
+      }
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      attempt++;
+      if (attempt > maxRetries) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+    }
+  }
+}
+
 export default function App() {
 
   const [gasUrl, setGasUrl] = useState<string>(getInitialGasUrl);
@@ -415,9 +439,7 @@ export default function App() {
         setLoading(true);
         setError(null);
       }
-      const res = await fetch(`${url}?action=getData`);
-      if (!res.ok) throw new Error('Gagal terhubung ke Google Apps Script');
-      const data = await res.json();
+      const data = await fetchWithRetry(`${url}?action=getData`);
       
       if (data.error) throw new Error(data.error);
 
@@ -439,7 +461,7 @@ export default function App() {
       }
     } catch (err: any) {
       if (!silent) {
-        setError(err.message || 'Terjadi kesalahan saat memuat data dari Google Sheets.');
+        setError('Koneksi lagi kurang stabil, silakan coba lagi.');
       } else {
         console.warn('Silent fetch warning:', err);
       }
@@ -491,17 +513,16 @@ export default function App() {
     }
 
     try {
-      const res = await fetch(gasUrl, {
+      const result = await fetchWithRetry(gasUrl, {
         method: 'POST',
         body: JSON.stringify({ action, ...payload }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       });
-      const result = await res.json();
       if (result.error) throw new Error(result.error);
       return result;
     } catch (err: any) {
       console.error('GAS API Error:', err);
-      throw err;
+      throw new Error('Koneksi lagi kurang stabil, silakan coba lagi.');
     }
   };
 
@@ -543,16 +564,13 @@ export default function App() {
     pendingWrites.current++;
     try {
       await callGasApi('toggleBayar', { anggotaId, pertemuanId, status: newStatus });
-      if (pendingWrites.current === 1 && gasUrl) {
-        await fetchDataFromGas(gasUrl, true);
-      }
     } catch (err: any) {
-      if (gasUrl) {
-        await fetchDataFromGas(gasUrl, true); // rollback
-      }
       alert('Gagal memperbarui pembayaran: ' + (err.message || 'Error'));
     } finally {
       pendingWrites.current--;
+      if (pendingWrites.current === 0 && gasUrl) {
+        await fetchDataFromGas(gasUrl, true);
+      }
       activeToggles.current.delete(key);
       setTogglingKeys(prev => {
         const next = new Set(prev);
@@ -1065,6 +1083,14 @@ export default function App() {
                 >
                   <Plus className="w-4 h-4" /> Tambah Pertemuan
                 </button>
+                <button
+                  onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
+                  disabled={loading}
+                  className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                  title="Refresh data dari Google Sheets"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                </button>
               </div>
             </div>
 
@@ -1174,6 +1200,20 @@ export default function App() {
 
         {activeTab === 'rekap' && (
           <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+              <div>
+                <h3 className="text-lg font-serif-title font-semibold">Panel Rekap & Tunggakan</h3>
+                <p className="text-xs text-[#8C9199]">Ringkasan keuangan kas dan daftar anggota yang belum lunas.</p>
+              </div>
+              <button
+                onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
+                disabled={loading}
+                className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                title="Refresh data dari Google Sheets"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
                 <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
@@ -1270,6 +1310,20 @@ export default function App() {
 
         {activeTab === 'riwayat' && (
           <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+              <div>
+                <h3 className="text-lg font-serif-title font-semibold">Riwayat Pemasukan</h3>
+                <p className="text-xs text-[#8C9199]">Daftar lengkap seluruh pembayaran kas secara kronologis.</p>
+              </div>
+              <button
+                onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
+                disabled={loading}
+                className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                title="Refresh data dari Google Sheets"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+              </button>
+            </div>
             <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
               <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
               <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
@@ -1320,12 +1374,22 @@ export default function App() {
                 <h3 className="text-lg font-serif-title font-semibold">Daftar Pengeluaran Kas</h3>
                 <p className="text-xs text-[#8C9199]">Catat dan kelola pengeluaran kas organisasi. Data otomatis tersimpan ke Google Sheets.</p>
               </div>
-              <button
-                onClick={() => setShowAddPengeluaranModal(true)}
-                className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" /> Tambah Pengeluaran
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setShowAddPengeluaranModal(true)}
+                  className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Tambah Pengeluaran
+                </button>
+                <button
+                  onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
+                  disabled={loading}
+                  className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                  title="Refresh data dari Google Sheets"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                </button>
+              </div>
             </div>
 
             <div className="bg-[#2B3036] rounded-lg border border-[#383D44] shadow overflow-hidden">

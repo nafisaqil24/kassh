@@ -388,6 +388,8 @@ function tambahPengeluaran(tanggal, keterangan, nominal) {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_PENGELUARAN);
     sheet.appendRow(['id', 'tanggal', 'keterangan', 'nominal']);
+    // Pastikan formatting/background hanya diterapkan pada baris header (row 1), TIDAK pada baris data/kosong di bawahnya
+    sheet.getRange(1, 1, 1, 4).setBackground('#ece6d6').setFontWeight('bold');
   }
   var newId = 'x' + new Date().getTime();
   
