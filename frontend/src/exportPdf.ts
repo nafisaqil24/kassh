@@ -103,8 +103,9 @@ function buildFooterHtml(tanggalCetak: string): string {
     </footer>`;
 }
 
-function sectionHtml(title: string, bodyHtml: string): string {
-  return `<section style="margin:0 0 18px 0;">
+function sectionHtml(title: string, bodyHtml: string, pageBreakBefore: boolean = false): string {
+  const breakStyle = pageBreakBefore ? 'page-break-before:always;break-before:page;' : '';
+  return `<section style="margin:0 0 18px 0;${breakStyle}">
       <div style="border-bottom:2px solid #141b26;margin-bottom:8px;padding-bottom:4px;">
         <h2 style="${SECTION_TITLE}">${escapeHtml(title)}</h2>
       </div>
@@ -233,8 +234,8 @@ function buildLandscapeReportHtml(data: LaporanPayload, tanggalCetak: string): s
 function buildPortraitReportHtml(data: LaporanPayload, tanggalCetak: string): string {
   return `${shellOpenHtml(PORTRAIT_WIDTH)}
     ${sectionHtml('2. Rekap & Tunggakan', buildRekapHtml(data))}
-    ${sectionHtml('3. Riwayat Pemasukan', buildPemasukanHtml(data))}
-    ${sectionHtml('4. Pengeluaran', buildPengeluaranHtml(data))}
+    ${sectionHtml('3. Riwayat Pemasukan', buildPemasukanHtml(data), true)}
+    ${sectionHtml('4. Pengeluaran', buildPengeluaranHtml(data), true)}
     ${buildFooterHtml(tanggalCetak)}
   </div>`;
 }
