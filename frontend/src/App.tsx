@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
   TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown, Maximize2,
-  Wallet, Scale
+  Wallet, Scale, Coins
 } from 'lucide-react';
 import { exportLaporanPdf } from './exportPdf';
 
@@ -877,7 +877,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1E2125] text-[#ECE6D8] flex flex-col">
+    <div className="min-h-screen bg-[#0a1628] text-[#ECE6D8] flex flex-col font-sans">
       {isFullscreen && (
         <div className="fixed top-2 right-2 z-50 flex flex-col items-end gap-1">
           <button
@@ -929,20 +929,22 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className="bg-[#2F343B] border-b border-[#383D44] px-4 py-4 md:px-8 shadow-md">
+      <header className="bg-[#0d1b2a] border-b border-[#d4a574]/30 px-4 py-5 md:px-8 shadow-xl">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center justify-between w-full md:w-auto">
             <div className="flex items-center gap-4">
-              <div className="w-1.5 self-stretch bg-[#C9A882] rounded-full hidden md:block"></div>
+              <div className="w-12 h-12 rounded-xl bg-[#112238] border border-[#d4a574]/40 flex items-center justify-center shadow-inner hidden md:flex text-[#d4a574]">
+                <Coins className="w-6 h-6" />
+              </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-serif-title font-bold tracking-widest text-[#ECE6D8]">
                   UANG KAS
                 </h1>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="bg-[#C9A882] text-[#1E2125] px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide">
+                  <span className="bg-[#d4a574] text-[#0a1628] px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide shadow">
                     {pengaturan.periode}
                   </span>
-                  <span className="text-xs text-[#8C9199] uppercase tracking-wide">Selasa / Kamis / Sabtu</span>
+                  <span className="text-xs text-[#d4a574]/80 uppercase tracking-wide font-medium">Selasa / Kamis / Sabtu</span>
                 </div>
               </div>
             </div>
@@ -950,7 +952,7 @@ export default function App() {
             {canFullscreenAndLock && (
               <button
                 onClick={handleToggleFullscreen}
-                className="md:hidden bg-[#383D44] hover:bg-[#484E58] text-[#C9A882] p-2.5 rounded-lg flex items-center justify-center transition border border-[#484E58] shrink-0"
+                className="md:hidden bg-[#112238] hover:bg-[#1a3354] text-[#d4a574] p-2.5 rounded-lg flex items-center justify-center transition border border-[#d4a574]/30 shrink-0"
                 title="Layar Penuh & Landscape"
                 aria-label="Layar Penuh & Landscape"
               >
@@ -960,58 +962,60 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-6">
-            <img src={`${import.meta.env.BASE_URL}logo-psht.png`} alt="Logo PSHT" className="h-16 w-16 object-contain" />
-            <div className="flex gap-6">
-              <div className="text-center">
-                <p className="text-2xl md:text-3xl font-bold text-[#ECE6D8]">{anggota.length.toString().padStart(2, '0')}</p>
-                <p className="text-xs text-[#8C9199] uppercase tracking-wide">Siswa</p>
+            <div className="hidden lg:block text-center italic text-xs text-[#d4a574]/80 max-w-[200px]">
+            </div>
+            <img src={`${import.meta.env.BASE_URL}logo-psht.png`} alt="Logo PSHT" className="h-16 w-16 object-contain drop-shadow-[0_0_10px_rgba(212,165,116,0.3)]" />
+            <div className="flex gap-4">
+              <div className="bg-[#112238] border border-[#d4a574]/30 px-4 py-2 rounded-xl text-center shadow">
+                <p className="text-xl md:text-2xl font-bold text-[#d4a574]">{anggota.length.toString().padStart(2, '0')}</p>
+                <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide font-medium">Siswa</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl md:text-3xl font-bold text-[#ECE6D8]">{pertemuan.length.toString().padStart(2, '0')}</p>
-                <p className="text-xs text-[#8C9199] uppercase tracking-wide">Pertemuan</p>
+              <div className="bg-[#112238] border border-[#d4a574]/30 px-4 py-2 rounded-xl text-center shadow">
+                <p className="text-xl md:text-2xl font-bold text-[#d4a574]">{pertemuan.length.toString().padStart(2, '0')}</p>
+                <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide font-medium">Pertemuan</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="max-w-7xl mx-auto flex gap-2 mt-4 pt-3 border-t border-[#383D44] overflow-x-auto">
+        <div className="max-w-7xl mx-auto flex gap-2 mt-5 pt-4 border-t border-[#d4a574]/20 overflow-x-auto">
           <button
             onClick={() => setActiveTab('grid')}
-            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'grid' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'grid' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
             }`}
           >
             <Users className="w-4 h-4" /> Tabel Kas ({anggota.length} Anggota)
           </button>
           <button
             onClick={() => setActiveTab('rekap')}
-            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'rekap' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'rekap' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
             }`}
           >
             <TrendingUp className="w-4 h-4" /> Panel Rekap & Tunggakan ({tunggakanList.length} Nunggak)
           </button>
           <button
             onClick={() => setActiveTab('riwayat')}
-            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'riwayat' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'riwayat' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
             }`}
           >
             <CheckCircle2 className="w-4 h-4" /> Pemasukan ({riwayatPemasukanList.length})
           </button>
           <button
             onClick={() => setActiveTab('pengeluaran')}
-            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'pengeluaran' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'pengeluaran' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
             }`}
           >
             <Receipt className="w-4 h-4" /> Pengeluaran ({pengeluaran.length})
           </button>
           <button
             onClick={() => setActiveTab('pengaturan')}
-            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'pengaturan' ? 'bg-[#C9A882] text-[#1E2125] shadow' : 'bg-[#1E2125] text-[#8C9199] hover:bg-[#383D44]'
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
+              activeTab === 'pengaturan' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
             }`}
           >
             <Settings className="w-4 h-4" /> Pengaturan {gasUrl ? '🟢' : '🔴'}
@@ -1019,10 +1023,10 @@ export default function App() {
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
-            className={`whitespace-nowrap px-4 py-2 rounded font-medium text-sm transition flex items-center gap-2 ml-auto border ${
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ml-auto border ${
               exportingPdf
-                ? 'bg-[#383D44] text-[#8C9199] border-[#4A5058] opacity-70 cursor-wait'
-                : 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80 hover:bg-emerald-900/50'
+                ? 'bg-[#112238] text-[#9CA3AF] border-[#d4a574]/30 opacity-70 cursor-wait'
+                : 'bg-emerald-950/80 text-emerald-300 border-emerald-700 hover:bg-emerald-900/60 shadow'
             }`}
             title="Unduh laporan lengkap (Tabel Kas, Rekap, Pemasukan, Pengeluaran) sebagai PDF"
           >
@@ -1672,8 +1676,9 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer className="bg-[#2B3036] border-t border-[#383D44] py-4 text-center text-xs text-[#8C9199] mt-auto">
-        Uang Kas Google Sheets — Dibuat untuk Bendahara & Wakil Bendahara (Internal)
+      <footer className="bg-[#0d1b2a] border-t border-[#d4a574]/30 py-6 px-4 text-center text-xs text-[#d4a574]/70 mt-auto flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full gap-2">
+        <span>Uang Kas Google Sheets — Dibuat untuk Bendahara & Wakil Bendahara (Internal)</span>
+        <span className="italic">"Tertib administrasi, transparan, dan akuntabel."</span>
       </footer>
     </div>
   );
