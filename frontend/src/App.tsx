@@ -1673,10 +1673,9 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-[#E2E8F0] py-6 px-4 text-center text-xs text-[#64748B] mt-auto flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full gap-2">
-        <span>Uang Kas Google Sheets — Dibuat untuk Bendahara & Wakil Bendahara (Internal)</span>
+        <span>Uang Kas Rayon (Internal)</span>
         <span className="flex items-center gap-1.5">
-          <Heart className="w-3 h-3 text-[#DC2626]" fill="currentColor" />
-          Bersama, lebih mudah
+          <Heart className="w-3 h-3 text-[#0c0000]" fill="currentColor" />
         </span>
       </footer>
     </div>
