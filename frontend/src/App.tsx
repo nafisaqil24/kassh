@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
   TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown, Maximize2,
-  Wallet, Scale, Coins
+  Wallet, Scale, Heart
 } from 'lucide-react';
 import { exportLaporanPdf } from './exportPdf';
 
@@ -877,18 +877,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a1628] text-[#ECE6D8] flex flex-col font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#E0E7FF] to-[#F8FAFC] text-[#1E293B] flex flex-col font-sans">
       {isFullscreen && (
         <div className="fixed top-2 right-2 z-50 flex flex-col items-end gap-1">
           <button
             onClick={handleToggleFullscreen}
-            className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-2.5 py-1 rounded text-xs font-medium shadow transition"
+            className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-2.5 py-1 rounded text-xs font-medium shadow transition"
             title="Keluar layar penuh"
           >
             Keluar layar penuh
           </button>
           {fullscreenError && (
-            <div className="bg-[#141b26] border border-amber-800/80 text-amber-300 px-2 py-1 rounded text-[10px] shadow max-w-[220px] text-right">
+            <div className="bg-[#FFFBEB] border border-[#FDE68A] text-[#B45309] px-2 py-1 rounded text-[10px] shadow max-w-[220px] text-right">
               {fullscreenError}
             </div>
           )}
@@ -898,13 +898,13 @@ export default function App() {
       {isPortrait && isSmallScreen && !isLandscapeDismissed && (
         <div 
           role="status" 
-          className="bg-[#141b26] border-b border-[#383D44] text-[#ECE6D8] px-3 py-1.5 shadow-sm flex items-center justify-between gap-2 text-[11px] md:text-xs"
+          className="bg-white border-b border-[#E2E8F0] text-[#1E293B] px-3 py-1.5 shadow-sm flex items-center justify-between gap-2 text-[11px] md:text-xs"
         >
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className="text-[#C9A882] shrink-0">📱</span>
+            <span className="text-[#4338CA] shrink-0">📱</span>
             <span className="truncate">
               Putar HP ke landscape agar tabel lebih lega.
-              {fullscreenError && <span className="block text-amber-300 text-[10px] mt-0.5">{fullscreenError}</span>}
+              {fullscreenError && <span className="block text-[#B45309] text-[10px] mt-0.5">{fullscreenError}</span>}
             </span>
           </div>
 
@@ -912,14 +912,14 @@ export default function App() {
             {canFullscreenAndLock && (
               <button
                 onClick={handleToggleFullscreen}
-                className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-2 py-1 rounded font-medium transition text-[11px]"
+                className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-2 py-1 rounded font-medium transition text-[11px]"
               >
                 Putar & Layar Penuh
               </button>
             )}
             <button
               onClick={dismissLandscapeBanner}
-              className="text-[#8C9199] hover:text-[#ECE6D8] px-1.5 py-1 transition text-[11px]"
+              className="text-[#64748B] hover:text-[#1E293B] px-1.5 py-1 transition text-[11px]"
               title="Tutup saran"
             >
               Tutup ✕
@@ -929,22 +929,20 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className="bg-[#0d1b2a] border-b border-[#d4a574]/30 px-4 py-5 md:px-8 shadow-xl">
+      <header className="bg-white border-b border-[#E2E8F0] px-4 py-5 md:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center justify-between w-full md:w-auto">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#112238] border border-[#d4a574]/40 flex items-center justify-center shadow-inner hidden md:flex text-[#d4a574]">
-                <Coins className="w-6 h-6" />
-              </div>
+              <img src={`${import.meta.env.BASE_URL}logo-psht.png`} alt="Logo PSHT" className="h-12 w-12 md:h-16 md:w-16 object-contain drop-shadow-[0_0_10px_rgba(99,102,241,0.25)]" />
               <div>
-                <h1 className="text-3xl md:text-4xl font-serif-title font-bold tracking-widest text-[#ECE6D8]">
+                <h1 className="text-3xl md:text-4xl font-serif-title font-bold tracking-widest text-[#1E293B]">
                   UANG KAS
                 </h1>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="bg-[#d4a574] text-[#0a1628] px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide shadow">
+                  <span className="bg-[#4F46E5] text-white px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide shadow">
                     {pengaturan.periode}
                   </span>
-                  <span className="text-xs text-[#d4a574]/80 uppercase tracking-wide font-medium">Selasa / Kamis / Sabtu</span>
+                  <span className="text-xs text-[#64748B] uppercase tracking-wide font-medium">Selasa / Kamis / Sabtu</span>
                 </div>
               </div>
             </div>
@@ -952,7 +950,7 @@ export default function App() {
             {canFullscreenAndLock && (
               <button
                 onClick={handleToggleFullscreen}
-                className="md:hidden bg-[#112238] hover:bg-[#1a3354] text-[#d4a574] p-2.5 rounded-lg flex items-center justify-center transition border border-[#d4a574]/30 shrink-0"
+                className="md:hidden bg-white hover:bg-[#EFF6FF] text-[#4338CA] p-2.5 rounded-lg flex items-center justify-center transition border border-[#6B7280] shrink-0"
                 title="Layar Penuh & Landscape"
                 aria-label="Layar Penuh & Landscape"
               >
@@ -962,28 +960,27 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="hidden lg:block text-center italic text-xs text-[#d4a574]/80 max-w-[200px]">
+            <div className="hidden lg:block text-center italic text-xs text-[#64748B] max-w-[200px]">
             </div>
-            <img src={`${import.meta.env.BASE_URL}logo-psht.png`} alt="Logo PSHT" className="h-16 w-16 object-contain drop-shadow-[0_0_10px_rgba(212,165,116,0.3)]" />
             <div className="flex gap-4">
-              <div className="bg-[#112238] border border-[#d4a574]/30 px-4 py-2 rounded-xl text-center shadow">
-                <p className="text-xl md:text-2xl font-bold text-[#d4a574]">{anggota.length.toString().padStart(2, '0')}</p>
-                <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide font-medium">Siswa</p>
+              <div className="bg-[#EFF6FF] border border-[#E2E8F0] px-4 py-2 rounded-xl text-center shadow-sm">
+                <p className="text-xl md:text-2xl font-bold text-[#4338CA]">{anggota.length.toString().padStart(2, '0')}</p>
+                <p className="text-[10px] text-[#475569] uppercase tracking-wide font-medium">Siswa</p>
               </div>
-              <div className="bg-[#112238] border border-[#d4a574]/30 px-4 py-2 rounded-xl text-center shadow">
-                <p className="text-xl md:text-2xl font-bold text-[#d4a574]">{pertemuan.length.toString().padStart(2, '0')}</p>
-                <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide font-medium">Pertemuan</p>
+              <div className="bg-[#EFF6FF] border border-[#E2E8F0] px-4 py-2 rounded-xl text-center shadow-sm">
+                <p className="text-xl md:text-2xl font-bold text-[#4338CA]">{pertemuan.length.toString().padStart(2, '0')}</p>
+                <p className="text-[10px] text-[#475569] uppercase tracking-wide font-medium">Pertemuan</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="max-w-7xl mx-auto flex gap-2 mt-5 pt-4 border-t border-[#d4a574]/20 overflow-x-auto">
+        <div className="max-w-7xl mx-auto flex gap-2 mt-5 pt-4 border-t border-[#E2E8F0] overflow-x-auto">
           <button
             onClick={() => setActiveTab('grid')}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'grid' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
+              activeTab === 'grid' ? 'bg-[#4F46E5] text-white font-bold shadow-md' : 'bg-white text-[#475569] border border-[#6B7280] hover:bg-[#EFF6FF]'
             }`}
           >
             <Users className="w-4 h-4" /> Tabel Kas ({anggota.length} Anggota)
@@ -991,7 +988,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('rekap')}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'rekap' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
+              activeTab === 'rekap' ? 'bg-[#4F46E5] text-white font-bold shadow-md' : 'bg-white text-[#475569] border border-[#6B7280] hover:bg-[#EFF6FF]'
             }`}
           >
             <TrendingUp className="w-4 h-4" /> Panel Rekap & Tunggakan ({tunggakanList.length} Nunggak)
@@ -999,7 +996,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('riwayat')}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'riwayat' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
+              activeTab === 'riwayat' ? 'bg-[#4F46E5] text-white font-bold shadow-md' : 'bg-white text-[#475569] border border-[#6B7280] hover:bg-[#EFF6FF]'
             }`}
           >
             <CheckCircle2 className="w-4 h-4" /> Pemasukan ({riwayatPemasukanList.length})
@@ -1007,7 +1004,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('pengeluaran')}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'pengeluaran' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
+              activeTab === 'pengeluaran' ? 'bg-[#4F46E5] text-white font-bold shadow-md' : 'bg-white text-[#475569] border border-[#6B7280] hover:bg-[#EFF6FF]'
             }`}
           >
             <Receipt className="w-4 h-4" /> Pengeluaran ({pengeluaran.length})
@@ -1015,7 +1012,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('pengaturan')}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ${
-              activeTab === 'pengaturan' ? 'bg-[#d4a574] text-[#0a1628] font-bold shadow-md' : 'bg-[#112238] text-[#ECE6D8] border border-[#d4a574]/30 hover:bg-[#1a3354]'
+              activeTab === 'pengaturan' ? 'bg-[#4F46E5] text-white font-bold shadow-md' : 'bg-white text-[#475569] border border-[#6B7280] hover:bg-[#EFF6FF]'
             }`}
           >
             <Settings className="w-4 h-4" /> Pengaturan {gasUrl ? '🟢' : '🔴'}
@@ -1025,8 +1022,8 @@ export default function App() {
             disabled={exportingPdf}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 ml-auto border ${
               exportingPdf
-                ? 'bg-[#112238] text-[#9CA3AF] border-[#d4a574]/30 opacity-70 cursor-wait'
-                : 'bg-emerald-950/80 text-emerald-300 border-emerald-700 hover:bg-emerald-900/60 shadow'
+                ? 'bg-[#E2E8F0] text-[#64748B] border-[#E2E8F0] opacity-70 cursor-wait'
+                : 'bg-[#4F46E5] text-white border-[#4F46E5] hover:bg-[#4338CA] shadow'
             }`}
             title="Unduh laporan lengkap (Tabel Kas, Rekap, Pemasukan, Pengeluaran) sebagai PDF"
           >
@@ -1039,16 +1036,16 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">
         {!gasUrl && activeTab !== 'pengaturan' && (
-          <div className="mb-6 bg-amber-950/60 border border-amber-800/80 p-4 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+          <div className="mb-6 bg-[#FFFBEB] border border-[#FDE68A] p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-[#B45309] shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-bold text-amber-300 mb-1">URL Google Apps Script Belum Dimasukkan!</p>
-              <p className="text-amber-200/80 mb-2">
+              <p className="font-bold text-[#B45309] mb-1">URL Google Apps Script Belum Dimasukkan!</p>
+              <p className="text-[#92400E] mb-2">
                 Aplikasi belum terhubung ke Google Sheets Anda. Silakan masukkan URL Web App Apps Script di tab Pengaturan.
               </p>
               <button
                 onClick={() => setActiveTab('pengaturan')}
-                className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded font-medium text-xs transition"
+                className="bg-[#B45309] hover:bg-[#92400E] text-white px-3 py-1.5 rounded font-medium text-xs transition"
               >
                 Buka Pengaturan Sekarang
               </button>
@@ -1057,41 +1054,40 @@ export default function App() {
         )}
 
         {loading && (
-          <div className="flex items-center justify-center py-6 text-gray-400 gap-2 mb-4">
-            <RefreshCw className="w-5 h-5 animate-spin text-[#C9A882]" /> Sinkronisasi dengan Google Sheets...
+          <div className="flex items-center justify-center py-6 text-[#64748B] gap-2 mb-4">
+            <RefreshCw className="w-5 h-5 animate-spin text-[#4338CA]" /> Sinkronisasi dengan Google Sheets...
           </div>
         )}
 
         {error && (
-          <div className="mb-4 bg-red-950/80 border border-red-800 p-4 rounded text-sm text-red-300">
+          <div className="mb-4 bg-[#FEF2F2] border border-[#FECACA] p-4 rounded text-sm text-[#B91C1C]">
             <strong>Error:</strong> {error}
           </div>
         )}
 
         {activeTab === 'grid' && (
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-[#E2E8F0]">
               <div>
                 <h3 className="text-lg font-serif-title font-semibold">Tabel Pembayaran Kas</h3>
-                <p className="text-xs text-[#8C9199]">Klik pada kotak sel untuk mengubah status pembayaran. Data otomatis tersimpan ke Google Sheets.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setShowAddAnggotaModal(true)}
-                  className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
+                  className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" /> Tambah Anggota
                 </button>
                 <button
                   onClick={() => setShowAddPertemuanModal(true)}
-                  className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058]"
+                  className="bg-white hover:bg-[#EFF6FF] text-[#1E293B] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#6B7280]"
                 >
                   <Plus className="w-4 h-4" /> Tambah Pertemuan
                 </button>
                 <button
                   onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
                   disabled={loading}
-                  className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                  className="bg-white hover:bg-[#EFF6FF] text-[#1E293B] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#6B7280] disabled:opacity-50"
                   title="Refresh data dari Google Sheets"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
@@ -1100,27 +1096,27 @@ export default function App() {
             </div>
 
             {/* Grid Table */}
-            <div className="bg-[#2B3036] rounded-lg border border-[#383D44] shadow overflow-hidden">
+            <div className="bg-white border border-[#E2E8F0] rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto max-h-[70vh]">
                 <table className="w-full border-collapse text-left text-sm">
-                  <thead className="sticky top-0 z-20 bg-[#2F343B] text-[#ECE6D8] border-b border-[#383D44]">
+                  <thead className="sticky top-0 z-20 bg-[#EFF6FF] text-[#1E293B] border-b border-[#E2E8F0]">
                     <tr>
-                      <th className="sticky left-0 z-30 bg-[#2F343B] px-4 py-3 font-serif-title border-r border-[#383D44] min-w-[180px]">
+                      <th className="sticky left-0 z-30 bg-[#EFF6FF] px-4 py-3 font-serif-title border-r border-[#E2E8F0] min-w-[180px]">
                         Nama Anggota
                       </th>
                       {pertemuan.map((pt) => {
                         const warnaHari =
-                          pt.hari?.toLowerCase() === 'selasa' ? 'text-[#93A98F]' :
-                          pt.hari?.toLowerCase() === 'kamis' ? 'text-[#C9A882]' :
-                          pt.hari?.toLowerCase() === 'sabtu' ? 'text-[#8DA6B8]' :
-                          'text-[#8C9199]';
+                          pt.hari?.toLowerCase() === 'selasa' ? 'text-[#047857]' :
+                          pt.hari?.toLowerCase() === 'kamis' ? 'text-[#4338CA]' :
+                          pt.hari?.toLowerCase() === 'sabtu' ? 'text-[#1D4ED8]' :
+                          'text-[#475569]';
                         return (
-                          <th key={pt.id} className="px-3 py-3 text-center border-r border-[#383D44]/50 min-w-[70px]">
+                          <th key={pt.id} className="px-3 py-3 text-center border-r border-[#E2E8F0]/50 min-w-[70px]">
                             <div className={`text-xs font-bold uppercase ${warnaHari}`}>{kapitalisasiHari(pt.hari)}</div>
                             <div className="text-sm font-semibold">{formatTanggalPertemuan(pt.tanggal)}</div>
                             <button
                               onClick={() => handleDeletePertemuan(pt.id, pt.tanggal, pt.hari)}
-                              className="mt-1 text-[#8C9199] hover:text-red-400 transition block mx-auto"
+                              className="mt-1 text-[#64748B] hover:text-[#DC2626] transition block mx-auto"
                               title="Hapus pertemuan"
                             >
                               <Trash2 className="w-3 h-3 inline" />
@@ -1131,10 +1127,10 @@ export default function App() {
                       <th className="px-4 py-3 text-center font-serif-title min-w-[100px]">Total Bayar</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#383D44]/60">
+                  <tbody className="divide-y divide-[#E2E8F0]/60">
                     {anggota.length === 0 ? (
                       <tr>
-                        <td colSpan={pertemuan.length + 2} className="text-center py-8 text-[#8C9199]">
+                        <td colSpan={pertemuan.length + 2} className="text-center py-8 text-[#64748B]">
                           Belum ada data anggota.
                         </td>
                       </tr>
@@ -1145,15 +1141,15 @@ export default function App() {
                           return p && p.status;
                         }).length;
 
-                        const bgBaris = idx % 2 === 0 ? 'bg-[#262A2F]' : 'bg-[#2B3036]';
+                        const bgBaris = idx % 2 === 0 ? 'bg-white' : 'bg-[#EFF6FF]';
 
                         return (
-                          <tr key={a.id} className={`${bgBaris} hover:bg-[#383D44]/40 transition`}>
-                            <td className={`sticky left-0 z-10 ${bgBaris} px-4 py-3 font-medium border-r border-[#383D44] flex items-center justify-between gap-2`}>
+                          <tr key={a.id} className={`${bgBaris} hover:bg-[#E0E7FF]/60 transition`}>
+                            <td className={`sticky left-0 z-10 ${bgBaris} px-4 py-3 font-medium border-r border-[#E2E8F0] flex items-center justify-between gap-2`}>
                               <span className="truncate">{a.nama}</span>
                               <button
                                 onClick={() => handleDeleteAnggota(a.id, a.nama)}
-                                className="text-[#8C9199] hover:text-red-400 p-1 rounded transition"
+                                className="text-[#64748B] hover:text-[#DC2626] p-1 rounded transition"
                                 title="Hapus anggota"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1170,26 +1166,26 @@ export default function App() {
                                 <td
                                   key={pt.id}
                                   onClick={() => handleTogglePembayaran(a.id, pt.id)}
-                                  className={`text-center p-2 border-r border-[#383D44]/40 cursor-pointer select-none transition ${
+                                  className={`text-center p-2 border-r border-[#E2E8F0]/40 cursor-pointer select-none transition ${
                                     isToggling ? 'opacity-60 cursor-wait' : ''
                                   } ${
                                     isLunas
-                                      ? 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 font-bold'
-                                      : 'bg-transparent hover:bg-[#383D44]/30 text-[#8C9199]'
+                                      ? 'bg-[#047857]/10 hover:bg-[#047857]/15 text-[#047857] font-bold'
+                                      : 'bg-transparent hover:bg-[#EFF6FF] text-[#475569]'
                                   }`}
                                   title="Klik untuk ubah status"
                                 >
                                   {isLunas ? (
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-900/60 text-emerald-300 mx-auto">
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-[#047857]/20 text-[#047857] mx-auto">
                                       ✓
                                     </span>
                                   ) : (
-                                    <span className="text-[#8C9199] text-xs">-</span>
+                                    <span className="text-[#64748B] text-xs">-</span>
                                   )}
                                 </td>
                               );
                             })}
-                            <td className="text-center font-bold px-4 py-3 text-emerald-400">
+                            <td className="text-center font-bold px-4 py-3 text-[#047857]">
                               {paidCount}/{pertemuan.length}
                             </td>
                           </tr>
@@ -1205,92 +1201,92 @@ export default function App() {
 
         {activeTab === 'rekap' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-[#E2E8F0]">
               <div>
                 <h3 className="text-lg font-serif-title font-semibold">Panel Rekap & Tunggakan</h3>
-                <p className="text-xs text-[#8C9199]">Ringkasan keuangan kas dan daftar anggota yang belum lunas.</p>
+                <p className="text-xs text-[#64748B]">Ringkasan keuangan kas dan daftar anggota yang belum lunas.</p>
               </div>
               <button
                 onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
                 disabled={loading}
-                className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                className="bg-white hover:bg-[#EFF6FF] text-[#1E293B] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#6B7280] disabled:opacity-50"
                 title="Refresh data dari Google Sheets"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
+              <div className="bg-white border border-[#E2E8F0] p-5 rounded-lg shadow">
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
-                  <Wallet className="w-4 h-4 text-emerald-400" />
+                  <p className="text-sm text-[#64748B]">Total Pemasukan Kas</p>
+                  <Wallet className="w-4 h-4 text-[#047857]" />
                 </div>
-                <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
+                <p className="text-3xl font-serif-title font-bold text-[#047857] mt-2">
                   Rp {totalKasTerkumpul.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">
+                <p className="text-xs text-[#64748B] mt-1">
                   Dari {totalLunasCount} pembayaran lunas (Rp {pengaturan.nominal.toLocaleString('id-ID')}/sesi)
                 </p>
               </div>
 
-              <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
+              <div className="bg-white border border-[#E2E8F0] p-5 rounded-lg shadow">
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-[#8C9199]">Total Pengeluaran Kas</p>
-                  <Receipt className="w-4 h-4 text-amber-400" />
+                  <p className="text-sm text-[#64748B]">Total Pengeluaran Kas</p>
+                  <Receipt className="w-4 h-4 text-[#B45309]" />
                 </div>
-                <p className="text-3xl font-serif-title font-bold text-amber-400 mt-2">
+                <p className="text-3xl font-serif-title font-bold text-[#B45309] mt-2">
                   Rp {totalPengeluaran.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">
+                <p className="text-xs text-[#64748B] mt-1">
                   Dari {pengeluaran.length} catatan pengeluaran
                 </p>
               </div>
 
-              <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
+              <div className="bg-white border border-[#E2E8F0] p-5 rounded-lg shadow">
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-[#8C9199]">Saldo Kas Bersih</p>
-                  <Scale className={`w-4 h-4 ${saldoKas < 0 ? 'text-red-400' : 'text-emerald-400'}`} />
+                  <p className="text-sm text-[#64748B]">Saldo Kas Bersih</p>
+                  <Scale className={`w-4 h-4 ${saldoKas < 0 ? 'text-[#DC2626]' : 'text-[#047857]'}`} />
                 </div>
-                <p className={`text-3xl font-serif-title font-bold mt-2 ${saldoKas < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                <p className={`text-3xl font-serif-title font-bold mt-2 ${saldoKas < 0 ? 'text-[#DC2626]' : 'text-[#047857]'}`}>
                   Rp {saldoKas.toLocaleString('id-ID')}
                 </p>
-                <p className="text-xs text-[#8C9199] mt-1">
+                <p className="text-xs text-[#64748B] mt-1">
                   {saldoKas < 0 ? '⚠️ Saldo kas minus / defisit' : 'Pemasukan - Pengeluaran'}
                 </p>
               </div>
             </div>
 
-            <div className="bg-[#2B3036] border border-[#383D44] rounded-lg p-5 shadow">
+            <div className="bg-white border border-[#E2E8F0] rounded-lg p-5 shadow">
               <h3 className="text-lg font-serif-title font-semibold mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500" /> Daftar Anggota dengan Tunggakan
+                <AlertCircle className="w-5 h-5 text-[#DC2626]" /> Daftar Anggota dengan Tunggakan
               </h3>
               {tunggakanList.length === 0 ? (
-                <div className="text-center py-8 text-emerald-400 bg-[#1E2125]/50 rounded-lg border border-[#383D44] flex items-center justify-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div className="text-center py-8 text-[#047857] bg-[#ECFDF5] rounded-lg border border-[#A7F3D0] flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-[#047857] shrink-0" />
                   <span>Semua anggota sudah lunas. Tidak ada tunggakan untuk periode ini.</span>
                 </div>
               ) : (
                 <>
-                  <div className="mb-4 bg-red-950/30 border border-red-900/40 rounded-lg p-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-sm">
-                    <span className="text-[#ECE6D8] font-medium">
+                  <div className="mb-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg p-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-sm">
+                    <span className="text-[#1E293B] font-medium">
                       Total Potensi Piutang:
                     </span>
-                    <span className="font-bold text-red-400">
+                    <span className="font-bold text-[#DC2626]">
                       Rp {tunggakanList.reduce((acc, curr) => acc + curr.totalTunggakanRupiah, 0).toLocaleString('id-ID')} dari {tunggakanList.length} anggota
                     </span>
                   </div>
                   {/* Mobile: Stacked Card Layout (< md) */}
                   <div className="md:hidden space-y-3">
                     {tunggakanList.map((item) => (
-                      <div key={item.id} className="bg-[#1E2125] border border-[#383D44] rounded-lg p-3.5 shadow-sm space-y-2">
+                      <div key={item.id} className="bg-white border border-[#E2E8F0] rounded-lg p-3.5 shadow-sm space-y-2">
                         <div className="flex justify-between items-start gap-2">
-                          <span className="font-medium text-[#ECE6D8] text-sm">{item.nama}</span>
-                          <span className="font-bold text-red-400 text-sm whitespace-nowrap">
+                          <span className="font-medium text-[#1E293B] text-sm">{item.nama}</span>
+                          <span className="font-bold text-[#DC2626] text-sm whitespace-nowrap">
                             Rp {item.totalTunggakanRupiah.toLocaleString('id-ID')}
                           </span>
                         </div>
                         <div>
-                          <span className="inline-block bg-red-950/60 text-red-400 border border-red-900/50 px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap">
+                          <span className="inline-block bg-[#FECACA] text-[#7F1D1D] border border-[#FCA5A5] px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap">
                             {item.jumlahBelumBayar} pertemuan belum bayar
                           </span>
                         </div>
@@ -1302,22 +1298,22 @@ export default function App() {
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left text-sm border-collapse">
                       <thead>
-                        <tr className="border-b border-[#383D44] text-[#8C9199]">
+                        <tr className="border-b border-[#E2E8F0] text-[#64748B]">
                           <th className="py-3 px-4">Nama Anggota</th>
                           <th className="py-3 px-4 text-center">Jumlah Belum Bayar</th>
                           <th className="py-3 px-4 text-right">Total Tunggakan</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#383D44]/50">
+                      <tbody className="divide-y divide-[#E2E8F0]/50">
                         {tunggakanList.map((item) => (
-                          <tr key={item.id} className="hover:bg-[#383D44]/40">
-                            <td className="py-3 px-4 font-medium text-[#ECE6D8]">{item.nama}</td>
+                          <tr key={item.id} className="hover:bg-[#E0E7FF]/60">
+                            <td className="py-3 px-4 font-medium text-[#1E293B]">{item.nama}</td>
                             <td className="py-3 px-4 text-center">
-                              <span className="bg-red-950/60 text-red-400 border border-red-900/50 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                              <span className="bg-[#FECACA] text-[#7F1D1D] border border-[#FCA5A5] px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap">
                                 {item.jumlahBelumBayar} pertemuan
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-right font-bold text-red-400 whitespace-nowrap">
+                            <td className="py-3 px-4 text-right font-bold text-[#DC2626] whitespace-nowrap">
                               Rp {item.totalTunggakanRupiah.toLocaleString('id-ID')}
                             </td>
                           </tr>
@@ -1333,40 +1329,40 @@ export default function App() {
 
         {activeTab === 'riwayat' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-[#E2E8F0]">
               <div>
                 <h3 className="text-lg font-serif-title font-semibold">Riwayat Pemasukan</h3>
-                <p className="text-xs text-[#8C9199]">Daftar lengkap seluruh pembayaran kas secara kronologis.</p>
+                <p className="text-xs text-[#64748B]">Daftar lengkap seluruh pembayaran kas secara kronologis.</p>
               </div>
               <button
                 onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
                 disabled={loading}
-                className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                className="bg-white hover:bg-[#EFF6FF] text-[#1E293B] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#6B7280] disabled:opacity-50"
                 title="Refresh data dari Google Sheets"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
               </button>
             </div>
-            <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-              <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
-              <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
+            <div className="bg-white border border-[#E2E8F0] p-5 rounded-lg shadow">
+              <p className="text-sm text-[#64748B]">Total Pemasukan Kas</p>
+              <p className="text-3xl font-serif-title font-bold text-[#047857] mt-2">
                 Rp {totalKasTerkumpul.toLocaleString('id-ID')}
               </p>
-              <p className="text-xs text-[#8C9199] mt-1">
+              <p className="text-xs text-[#64748B] mt-1">
                 Dari {riwayatPemasukanList.length} pembayaran lunas tercatat
               </p>
             </div>
 
-            <div className="bg-[#2B3036] border border-[#383D44] rounded-lg p-5 shadow space-y-4">
+            <div className="bg-white border border-[#E2E8F0] rounded-lg p-5 shadow space-y-4">
               <div>
                 <h3 className="text-lg font-serif-title font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Riwayat Pemasukan
+                  <CheckCircle2 className="w-5 h-5 text-[#047857]" /> Riwayat Pemasukan
                 </h3>
-                <p className="text-xs text-[#8C9199] mt-0.5">Daftar lengkap seluruh pembayaran kas secara kronologis.</p>
+                <p className="text-xs text-[#64748B] mt-0.5">Daftar lengkap seluruh pembayaran kas secara kronologis.</p>
               </div>
 
               {riwayatPemasukanList.length === 0 ? (
-                <div className="text-center py-8 text-[#8C9199] bg-[#1E2125]/50 rounded border border-[#383D44]">
+                <div className="text-center py-8 text-[#64748B] bg-[#F8FAFC] rounded border border-[#E2E8F0]">
                   Belum ada pemasukan tercatat.
                 </div>
               ) : (
@@ -1374,12 +1370,12 @@ export default function App() {
                   {riwayatPemasukanList.map((item) => (
                     <div 
                       key={item.id} 
-                      className="bg-[#1E2125] border border-[#383D44] rounded-lg p-3.5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
+                      className="bg-white border border-[#E2E8F0] rounded-lg p-3.5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
                     >
-                      <div className="text-[#ECE6D8] text-sm">
-                        <span className="font-bold text-[#C9A882]">{item.nama}</span> bayar pada {item.hari}, {item.tanggal} {pengaturan.periode}
+                      <div className="text-[#1E293B] text-sm">
+                        <span className="font-bold text-[#4338CA]">{item.nama}</span> bayar pada {item.hari}, {item.tanggal} {pengaturan.periode}
                       </div>
-                      <div className="font-bold text-emerald-400 text-sm whitespace-nowrap">
+                      <div className="font-bold text-[#047857] text-sm whitespace-nowrap">
                         — Rp {item.nominal.toLocaleString('id-ID')}
                       </div>
                     </div>
@@ -1392,22 +1388,22 @@ export default function App() {
 
         {activeTab === 'pengeluaran' && (
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#2B3036] p-4 rounded-lg border border-[#383D44]">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-[#E2E8F0]">
               <div>
                 <h3 className="text-lg font-serif-title font-semibold">Daftar Pengeluaran Kas</h3>
-                <p className="text-xs text-[#8C9199]">Catat dan kelola pengeluaran kas organisasi. Data otomatis tersimpan ke Google Sheets.</p>
+                <p className="text-xs text-[#64748B]">Catat dan kelola pengeluaran kas organisasi. Data otomatis tersimpan ke Google Sheets.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setShowAddPengeluaranModal(true)}
-                  className="bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
+                  className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" /> Tambah Pengeluaran
                 </button>
                 <button
                   onClick={() => gasUrl && fetchDataFromGas(gasUrl, false)}
                   disabled={loading}
-                  className="bg-[#383D44] hover:bg-[#4A5058] text-[#ECE6D8] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#4A5058] disabled:opacity-50"
+                  className="bg-white hover:bg-[#EFF6FF] text-[#1E293B] px-3 py-2 rounded text-sm font-medium transition flex items-center gap-1.5 border border-[#6B7280] disabled:opacity-50"
                   title="Refresh data dari Google Sheets"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
@@ -1415,10 +1411,10 @@ export default function App() {
               </div>
             </div>
 
-            <div className="bg-[#2B3036] rounded-lg border border-[#383D44] shadow overflow-hidden">
+            <div className="bg-white border border-[#E2E8F0] rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto max-h-[70vh]">
                 <table className="w-full border-collapse text-left text-sm">
-                  <thead className="sticky top-0 z-20 bg-[#2F343B] text-[#ECE6D8] border-b border-[#383D44]">
+                  <thead className="sticky top-0 z-20 bg-[#EFF6FF] text-[#1E293B] border-b border-[#E2E8F0]">
                     <tr>
                       <th className="px-4 py-3 font-serif-title min-w-[120px]">Tanggal</th>
                       <th className="px-4 py-3 font-serif-title min-w-[250px]">Keterangan</th>
@@ -1426,27 +1422,27 @@ export default function App() {
                       <th className="px-4 py-3 font-serif-title text-center min-w-[80px]">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#383D44]/60">
+                  <tbody className="divide-y divide-[#E2E8F0]/60">
                     {pengeluaran.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="text-center py-8 text-[#8C9199]">
+                        <td colSpan={4} className="text-center py-8 text-[#64748B]">
                           Belum ada data pengeluaran kas.
                         </td>
                       </tr>
                     ) : (
                       pengeluaran.map((item, idx) => {
-                        const bgBaris = idx % 2 === 0 ? 'bg-[#262A2F]' : 'bg-[#2B3036]';
+                        const bgBaris = idx % 2 === 0 ? 'bg-white' : 'bg-[#EFF6FF]';
                         return (
-                          <tr key={item.id} className={`${bgBaris} hover:bg-[#383D44]/40 transition`}>
-                            <td className="px-4 py-3 font-medium text-[#ECE6D8]">{formatTanggalPengeluaran(item.tanggal)}</td>
-                            <td className="px-4 py-3 text-[#ECE6D8]">{item.keterangan}</td>
-                            <td className="px-4 py-3 text-right font-bold text-amber-400">
+                          <tr key={item.id} className={`${bgBaris} hover:bg-[#E0E7FF]/60 transition`}>
+                            <td className="px-4 py-3 font-medium text-[#1E293B]">{formatTanggalPengeluaran(item.tanggal)}</td>
+                            <td className="px-4 py-3 text-[#1E293B]">{item.keterangan}</td>
+                            <td className="px-4 py-3 text-right font-bold text-[#B45309]">
                               Rp {Number(item.nominal || 0).toLocaleString('id-ID')}
                             </td>
                             <td className="px-4 py-3 text-center">
                               <button
                                 onClick={() => handleDeletePengeluaran(item.id, item.keterangan)}
-                                className="text-[#8C9199] hover:text-red-400 p-1.5 rounded transition"
+                                className="text-[#64748B] hover:text-[#DC2626] p-1.5 rounded transition"
                                 title="Hapus pengeluaran"
                               >
                                 <Trash2 className="w-4 h-4 inline" />
@@ -1464,45 +1460,45 @@ export default function App() {
         )}
 
         {activeTab === 'pengaturan' && (
-          <div className="max-w-xl mx-auto bg-[#2B3036] border border-[#383D44] rounded-lg p-6 shadow space-y-6">
+          <div className="max-w-xl mx-auto bg-white border border-[#E2E8F0] rounded-lg p-6 shadow space-y-6">
             <div>
               <h3 className="text-xl font-serif-title font-semibold mb-2 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-[#C9A882]" /> Pengaturan Google Apps Script URL
+                <Settings className="w-5 h-5 text-[#4338CA]" /> Pengaturan Google Apps Script URL
               </h3>
-              <p className="text-xs text-[#8C9199] mb-4">
+              <p className="text-xs text-[#64748B] mb-4">
                 Masukkan URL Web App dari Google Apps Script Anda agar website ini terhubung langsung ke Google Sheets.
               </p>
 
               <form onSubmit={handleSavePengaturan} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#8C9199] mb-1">URL Web App Google Apps Script</label>
+                  <label className="block text-sm font-medium text-[#64748B] mb-1">URL Web App Google Apps Script</label>
                   <input
                     type="url"
                     value={inputGasUrl}
                     onChange={(e) => setInputGasUrl(e.target.value)}
                     placeholder="https://script.google.com/macros/s/.../exec"
-                    className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882] text-sm"
+                    className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#8C9199] mb-1">Nama Periode (Bulan / Tahun)</label>
+                  <label className="block text-sm font-medium text-[#64748B] mb-1">Nama Periode (Bulan / Tahun)</label>
                   <input
                     type="text"
                     value={editPeriode}
                     onChange={(e) => setEditPeriode(e.target.value)}
-                    className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                    className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#8C9199] mb-1">Nominal Kas per Pertemuan (Rp)</label>
+                  <label className="block text-sm font-medium text-[#64748B] mb-1">Nominal Kas per Pertemuan (Rp)</label>
                   <input
                     type="number"
                     value={editNominal}
                     onChange={(e) => setEditNominal(Number(e.target.value))}
-                    className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                    className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                     min="0"
                     step="1000"
                     required
@@ -1512,7 +1508,7 @@ export default function App() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] font-medium py-2 px-4 rounded transition shadow flex items-center justify-center gap-2"
+                    className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-medium py-2 px-4 rounded transition shadow flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" /> Simpan & Hubungkan
                   </button>
@@ -1526,17 +1522,17 @@ export default function App() {
       {/* Modal Tambah Anggota */}
       {showAddAnggotaModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#2B3036] border border-[#383D44] rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-white border border-[#E2E8F0] rounded-lg max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-serif-title font-semibold mb-4">Tambah Anggota Baru</h3>
             <form onSubmit={handleAddAnggota} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Nama Anggota</label>
+                <label className="block text-sm text-[#64748B] mb-1">Nama Anggota</label>
                 <input
                   type="text"
                   value={newAnggotaNama}
                   onChange={(e) => setNewAnggotaNama(e.target.value)}
                   placeholder="contoh: Budi"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                   autoFocus
                   required
                 />
@@ -1545,13 +1541,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddAnggotaModal(false)}
-                  className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
+                  className="px-4 py-2 bg-white border border-[#6B7280] text-[#475569] rounded hover:bg-[#F8FAFC]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] rounded font-medium"
+                  className="px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded font-medium"
                 >
                   Simpan
                 </button>
@@ -1564,15 +1560,15 @@ export default function App() {
       {/* Modal Tambah Pertemuan */}
       {showAddPertemuanModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#2B3036] border border-[#383D44] rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-white border border-[#E2E8F0] rounded-lg max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-serif-title font-semibold mb-4">Tambah Pertemuan Baru</h3>
             <form onSubmit={handleAddPertemuan} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Hari</label>
+                <label className="block text-sm text-[#64748B] mb-1">Hari</label>
                 <select
                   value={newHari}
                   onChange={(e) => setNewHari(e.target.value)}
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                 >
                   <option value="Senin">Senin</option>
                   <option value="Selasa">Selasa</option>
@@ -1584,13 +1580,13 @@ export default function App() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Tanggal</label>
+                <label className="block text-sm text-[#64748B] mb-1">Tanggal</label>
                 <input
                   type="text"
                   value={newTanggal}
                   onChange={(e) => setNewTanggal(e.target.value)}
                   placeholder="contoh: 3"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                   autoFocus
                   required
                 />
@@ -1599,13 +1595,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddPertemuanModal(false)}
-                  className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
+                  className="px-4 py-2 bg-white border border-[#6B7280] text-[#475569] rounded hover:bg-[#F8FAFC]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] rounded font-medium"
+                  className="px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded font-medium"
                 >
                   Simpan
                 </button>
@@ -1618,38 +1614,38 @@ export default function App() {
       {/* Modal Tambah Pengeluaran */}
       {showAddPengeluaranModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#2B3036] border border-[#383D44] rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-white border border-[#E2E8F0] rounded-lg max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-serif-title font-semibold mb-4">Tambah Pengeluaran Kas</h3>
             <form onSubmit={handleAddPengeluaran} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Tanggal (opsional)</label>
+                <label className="block text-sm text-[#64748B] mb-1">Tanggal (opsional)</label>
                 <input
                   type="text"
                   value={newPengeluaranTanggal}
                   onChange={(e) => setNewPengeluaranTanggal(e.target.value)}
                   placeholder="contoh: 10 Oktober 2026"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Keterangan Pengeluaran *</label>
+                <label className="block text-sm text-[#64748B] mb-1">Keterangan Pengeluaran *</label>
                 <input
                   type="text"
                   value={newPengeluaranKeterangan}
                   onChange={(e) => setNewPengeluaranKeterangan(e.target.value)}
                   placeholder="contoh: Konsumsi rapat / Beli ATK"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#8C9199] mb-1">Nominal (Rp) *</label>
+                <label className="block text-sm text-[#64748B] mb-1">Nominal (Rp) *</label>
                 <input
                   type="number"
                   value={newPengeluaranNominal}
                   onChange={(e) => setNewPengeluaranNominal(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="contoh: 50000"
-                  className="w-full bg-[#1E2125] border border-[#383D44] rounded px-3 py-2 text-[#ECE6D8] focus:outline-none focus:border-[#C9A882]"
+                  className="w-full bg-white border border-[#6B7280] rounded px-3 py-2 text-[#1E293B] focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/30 focus:outline-none"
                   min="1"
                   step="1"
                   required
@@ -1659,13 +1655,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddPengeluaranModal(false)}
-                  className="px-4 py-2 bg-[#1E2125] border border-[#383D44] text-[#8C9199] rounded hover:bg-[#383D44]"
+                  className="px-4 py-2 bg-white border border-[#6B7280] text-[#475569] rounded hover:bg-[#F8FAFC]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#C9A882] hover:bg-[#b8996f] text-[#1E2125] rounded font-medium"
+                  className="px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded font-medium"
                 >
                   Simpan
                 </button>
@@ -1676,9 +1672,12 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer className="bg-[#0d1b2a] border-t border-[#d4a574]/30 py-6 px-4 text-center text-xs text-[#d4a574]/70 mt-auto flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full gap-2">
+      <footer className="border-t border-[#E2E8F0] py-6 px-4 text-center text-xs text-[#64748B] mt-auto flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full gap-2">
         <span>Uang Kas Google Sheets — Dibuat untuk Bendahara & Wakil Bendahara (Internal)</span>
-        <span className="italic">"Tertib administrasi, transparan, dan akuntabel."</span>
+        <span className="flex items-center gap-1.5">
+          <Heart className="w-3 h-3 text-[#DC2626]" fill="currentColor" />
+          Bersama, lebih mudah
+        </span>
       </footer>
     </div>
   );
