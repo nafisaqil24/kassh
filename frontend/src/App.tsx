@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Settings, Plus, Trash2, AlertCircle, 
-  TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown, Maximize2
+  TrendingUp, RefreshCw, CheckCircle2, Receipt, FileDown, Maximize2,
+  Wallet, Scale
 } from 'lucide-react';
 import { exportLaporanPdf } from './exportPdf';
 
@@ -1216,7 +1217,10 @@ export default function App() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-[#8C9199]">Total Pemasukan Kas</p>
+                  <Wallet className="w-4 h-4 text-emerald-400" />
+                </div>
                 <p className="text-3xl font-serif-title font-bold text-emerald-400 mt-2">
                   Rp {totalKasTerkumpul.toLocaleString('id-ID')}
                 </p>
@@ -1226,7 +1230,10 @@ export default function App() {
               </div>
 
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Total Pengeluaran Kas</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-[#8C9199]">Total Pengeluaran Kas</p>
+                  <Receipt className="w-4 h-4 text-amber-400" />
+                </div>
                 <p className="text-3xl font-serif-title font-bold text-amber-400 mt-2">
                   Rp {totalPengeluaran.toLocaleString('id-ID')}
                 </p>
@@ -1236,7 +1243,10 @@ export default function App() {
               </div>
 
               <div className="bg-[#2B3036] border border-[#383D44] p-5 rounded-lg shadow">
-                <p className="text-sm text-[#8C9199]">Saldo Kas Bersih</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-[#8C9199]">Saldo Kas Bersih</p>
+                  <Scale className={`w-4 h-4 ${saldoKas < 0 ? 'text-red-400' : 'text-emerald-400'}`} />
+                </div>
                 <p className={`text-3xl font-serif-title font-bold mt-2 ${saldoKas < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                   Rp {saldoKas.toLocaleString('id-ID')}
                 </p>
@@ -1251,11 +1261,20 @@ export default function App() {
                 <AlertCircle className="w-5 h-5 text-red-500" /> Daftar Anggota dengan Tunggakan
               </h3>
               {tunggakanList.length === 0 ? (
-                <div className="text-center py-8 text-emerald-400 bg-[#1E2125]/50 rounded border border-[#383D44]">
-                  🎉 Luar biasa! Semua anggota sudah melunasi seluruh kas pertemuan.
+                <div className="text-center py-8 text-emerald-400 bg-[#1E2125]/50 rounded-lg border border-[#383D44] flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>Semua anggota sudah lunas. Tidak ada tunggakan untuk periode ini.</span>
                 </div>
               ) : (
                 <>
+                  <div className="mb-4 bg-red-950/30 border border-red-900/40 rounded-lg p-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-sm">
+                    <span className="text-[#ECE6D8] font-medium">
+                      Total Potensi Piutang:
+                    </span>
+                    <span className="font-bold text-red-400">
+                      Rp {tunggakanList.reduce((acc, curr) => acc + curr.totalTunggakanRupiah, 0).toLocaleString('id-ID')} dari {tunggakanList.length} anggota
+                    </span>
+                  </div>
                   {/* Mobile: Stacked Card Layout (< md) */}
                   <div className="md:hidden space-y-3">
                     {tunggakanList.map((item) => (
